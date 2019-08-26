@@ -2,7 +2,7 @@
 
 /* eslint-disable */
 
-const {Broker, Service, Action, Handler, Plugin} = require('agata');
+const Agata = require('agata'); // {Broker, Service, Action, Handler, Plugin}
 
 // broker
 const broker = Agata.Broker({
@@ -25,7 +25,6 @@ broker
 // <.>/service/friends/index.js
 
 module.exports = Agata.Service({
-
     handlersPath: './handlers', // local for service
 
     singletons: ['postgres', 'statistics', 'log'],
@@ -41,9 +40,9 @@ module.exports = Agata.Service({
 // <.>/singleton/postgres
 
 module.exports = Agata.Singleton({
-    mixins: [],
+    singletons: [],
 
-    async start() {},
+    async start({singletons}) {},
     async stop() {},
 });
 
@@ -53,25 +52,27 @@ module.exports = Agata.Singleton({
 // <.>/actions/user/getFriends.js
 
 module.exports = Agata.Action({
-    mixins: ['postgres'],
+    singletons: ['postgres'],
     actions: ['user.getById'],
     plugins: {
         httpContract: {
             method: 'GET',
             host: 'example.com',
             url: '/api/user/{id}',
-        }
+        },
     },
 
-    async fn({singletons: {postgres}, actions}) {
-        return async(userId) => {
+    async fn({singletons: {postgres}, actions, plugins}) {
+        return async userId => {
             const user = await actions.user.getById(userId);
-            const friends = await postgres.User.getFriends(user);
-
-            return friends;
+            return await postgres.User.getFriends(user);
         };
     },
 });
 
 // handlers dir
 // <.>/service/<name>/handler/getFriends.js
+
+module.exports = Agata.Handler({
+
+});

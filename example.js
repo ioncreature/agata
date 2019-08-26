@@ -1,5 +1,7 @@
 'use strict';
 
+/* eslint-disable */
+
 const {Broker, Service, Action, Handler, Plugin} = require('agata');
 
 // broker

@@ -17,6 +17,9 @@
     "url": "https://github.com/ioncreature/agata/issues"
   },
   "homepage": "https://github.com/ioncreature/agata#readme",
+  "dependencies": {
+    "lodash": "4.17.15"
+  },
   "devDependencies": {
     "eslint": "6.2.2",
     "eslint-config-agata": "^0.1.2"

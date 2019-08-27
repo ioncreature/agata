@@ -20,10 +20,8 @@ broker
     });
 
 
-
 // services dir
 // <.>/service/friends/index.js
-
 module.exports = Agata.Service({
     handlersPath: './handlers', // local for service
 
@@ -38,7 +36,6 @@ module.exports = Agata.Service({
 
 // mixins dir
 // <.>/singleton/postgres
-
 module.exports = Agata.Singleton({
     singletons: [],
 
@@ -47,10 +44,8 @@ module.exports = Agata.Singleton({
 });
 
 
-
 // actions dir
 // <.>/actions/user/getFriends.js
-
 module.exports = Agata.Action({
     singletons: ['postgres'],
     actions: ['user.getById'],
@@ -70,9 +65,21 @@ module.exports = Agata.Action({
     },
 });
 
+
 // handlers dir
 // <.>/service/<name>/handler/getFriends.js
-
 module.exports = Agata.Handler({
+    singletons: ['postgres'],
+    actions: ['user.getFriends'],
 
+    // imagine this is http handler
+    async fn({singletons, actions}) {
+        return (res, req, next) => {
+            const id = req.params.id;
+            actions.user
+                .getFriends(id)
+                .then(req.json)
+                .catch(next);
+        };
+    },
 });

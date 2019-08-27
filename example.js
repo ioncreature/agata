@@ -83,3 +83,16 @@ module.exports = Agata.Handler({
         };
     },
 });
+
+
+// scripts
+const broker = require('../src/broker');
+broker
+    .startScript({
+        singletons: [],
+        actions: [],
+        async start({singletons, actions}) {},
+    })
+    .then(() => console.log('script done'))
+    .catch(e => console.error('script error', e));
+

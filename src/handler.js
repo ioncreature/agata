@@ -1,27 +1,11 @@
 'use strict';
 
 const
-    {isObject, isFunction} = require('lodash'),
-    {isStringArray} = require('./utils');
+    Action = require('./action');
 
-
-class Handler {
-    static validateConfig(handler) {
-        if (handler instanceof Handler)
-            return;
-
-        if (!isObject(handler))
-            throw new Error('Handler parameters have to be an object');
-
-        if (!isFunction(handler.fn))
-            throw new Error('Handler function is required');
-
-        if (handler.singletons && !isStringArray(handler.singletons))
-            throw new Error('Parameter "singletons" have to be an array of strings');
-
-        if (handler.actions && !isStringArray(handler.actions))
-            throw new Error('Parameter "actions" have to be an array of strings');
-    }
-}
+/**
+ * Handler is a service-level action without ability to refer to another handlers
+ */
+class Handler extends Action {}
 
 module.exports = Handler;

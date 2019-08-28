@@ -8,6 +8,31 @@ const
 
 class Service {
 
+    static validateConfig(config) {
+        if (!isObject(config))
+            throw new Error('Service config have to be an object');
+
+        if (!isFunction(config.start))
+            throw new Error('Parameter "start" have to be a function');
+
+        if (config.stop && !isFunction(config.stop))
+            throw new Error('Parameter "stop" have to be a function');
+
+        if (config.singletons && !isStringArray(config.singletons))
+            throw new Error('Parameter "singletons" have to be an array of strings');
+
+        if (config.actions && !isStringArray(config.actions))
+            throw new Error('Parameter "actions" have to be an array of strings');
+
+        if (config.handlers) {
+            if (!isObject(config.handlers))
+                throw new Error('Parameter "handlers" have to be an object');
+
+            Object.values(config.handlers).forEach(h => h instanceof Handler || Handler.validateConfig(h));
+        }
+    }
+
+
     /**
      * @param {function} start
      * @param {function} [stop]
@@ -17,49 +42,17 @@ class Service {
      * @param {string} [handlersPath] path to look for handlers, scanning is recursive
      */
     constructor({start, stop, singletons, actions, handlers, handlersPath}) {
-        this.actions = [];
-        this.singletons = [];
-        this.handlers = {};
+        Service.validateConfig({start, stop, singletons, actions, handlers, handlersPath});
 
-        if (!isFunction(start))
-            throw new Error('Parameter "start" have to be a function');
-
+        this.actions = actions || [];
+        this.singletons = singletons || [];
+        this.handlers = handlers || {};
         this.start = start;
-
-        if (stop) {
-            if (!isFunction(stop))
-                throw new Error('Parameter "stop" have to be a function');
-
-            this.stop = stop;
-        }
-
-        if (singletons) {
-            if (!isStringArray(singletons))
-                throw new Error('Parameter "singletons" have to be an array of strings');
-
-            this.singletons = singletons;
-        }
-
-        if (actions) {
-            if (!isStringArray(actions))
-                throw new Error('Parameter "actions" have to be an array of strings');
-
-            this.actions = actions;
-        }
-
-        if (handlers) {
-            if (!isObject(handlers))
-                throw new Error('Parameter "handlers" have to be an object');
-
-            Object.values(handlers).forEach(handler => Handler.validateConfig(handler));
-
-            this.handlers = handlers;
-        }
+        this.stop = stop;
 
         if (handlersPath) {
             // todo: add handlers from given path (probably broker have to do it)
         }
-
     }
 }
 

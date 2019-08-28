@@ -8,27 +8,24 @@ const
 
 class Service {
 
-    static validateConfig(config) {
-        if (!isObject(config))
-            throw new Error('Service config have to be an object');
-
-        if (!isFunction(config.start))
+    static validateConfig({start, stop, singletons, actions, handlers}) {
+        if (!isFunction(start))
             throw new Error('Parameter "start" have to be a function');
 
-        if (config.stop && !isFunction(config.stop))
+        if (stop && !isFunction(stop))
             throw new Error('Parameter "stop" have to be a function');
 
-        if (config.singletons && !isStringArray(config.singletons))
+        if (singletons && !isStringArray(singletons))
             throw new Error('Parameter "singletons" have to be an array of strings');
 
-        if (config.actions && !isStringArray(config.actions))
+        if (actions && !isStringArray(actions))
             throw new Error('Parameter "actions" have to be an array of strings');
 
-        if (config.handlers) {
-            if (!isObject(config.handlers))
+        if (handlers) {
+            if (!isObject(handlers))
                 throw new Error('Parameter "handlers" have to be an object');
 
-            Object.values(config.handlers).forEach(h => h instanceof Handler || Handler.validateConfig(h));
+            Object.values(handlers).forEach(h => h instanceof Handler || Handler.validateConfig(h));
         }
     }
 

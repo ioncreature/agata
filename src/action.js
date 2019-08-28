@@ -10,20 +10,17 @@ const
  * Action is shared across all services
  */
 class Action {
-    static validateConfig(config) {
-        if (!isObject(config))
-            throw new Error('Action config have to be an object');
-
-        if (!isFunction(config.fn))
+    static validateConfig({singletons, actions, plugins, fn}) {
+        if (!isFunction(fn))
             throw new Error('Parameter "fn" have to be a function');
 
-        if (config.singletons && !isStringArray(config.singletons))
+        if (singletons && !isStringArray(singletons))
             throw new Error('Parameter "singletons" have to be an array of strings');
 
-        if (config.actions && !isStringArray(config.actions))
+        if (actions && !isStringArray(actions))
             throw new Error('Parameter "actions" have to be an array of strings');
 
-        if (config.plugins && !isObject(config.plugins))
+        if (plugins && !isObject(plugins))
             throw new Error('Parameter "plugins" have to be an object');
     }
 

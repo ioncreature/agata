@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "lint": "eslint ."
   },
   "repository": {
@@ -23,7 +23,8 @@
   },
   "devDependencies": {
     "eslint": "6.2.2",
-    "eslint-config-agata": "^0.1.2"
+    "eslint-config-agata": "^0.1.2",
+    "jest": "24.9.0"
   },
   "eslintConfig": {
     "extends": "agata",

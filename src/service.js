@@ -7,6 +7,7 @@ const
 
 
 class Service {
+
     /**
      * @param {function} start
      * @param {function} [stop]

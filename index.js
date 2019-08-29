@@ -6,7 +6,6 @@ const
     Singleton = require('./src/singleton'),
     Plugin = require('./src/plugin'),
     Handler = require('./src/handler'),
-    Script = require('./src/script'),
     Action = require('./src/action');
 
 

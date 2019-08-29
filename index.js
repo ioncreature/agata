@@ -16,4 +16,3 @@ exports.Singleton = config => new Singleton(config);
 exports.Plugin = config => new Plugin(config);
 exports.Action = config => new Action(config);
 exports.Handler = config => new Handler(config);
-exports.Script = config => new Script(config);

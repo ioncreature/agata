@@ -2,15 +2,11 @@
 
 
 const
+    {isObject, isString} = require('lodash'),
     Service = require('./service'),
-    {isObject, isString} = require('lodash');
-
-
-const
-    SINGLETONS_PATH = 'src/singleton',
-    ACTIONS_PATH = 'src/action',
-    PLUGINS_PATH = 'src/plugin',
-    SERVICES_PATH = 'src/service';
+    Singleton = require('./singleton'),
+    Action = require('./action'),
+    Plugin = require('./plugin');
 
 
 /**
@@ -28,30 +24,67 @@ class Broker {
      * @param {Object} [plugins]
      * @param {Object} [services]
      */
-    constructor({singletonsPath, actionsPath, pluginsPath, servicesPath, singletons, actions, plugins, services}) {
-        this.singletonsPath = singletonsPath || SINGLETONS_PATH;
-        this.actionsPath = actionsPath || ACTIONS_PATH;
-        this.pluginsPath = pluginsPath || PLUGINS_PATH;
-        this.servicesPath = servicesPath || SERVICES_PATH;
+    constructor({singletons, actions, plugins, services, singletonsPath, actionsPath, pluginsPath, servicesPath}) {
+        this.singletons = {};
+        this.actions = {};
+        this.plugins = {};
+        this.services = {};
+
+        this.singletonsPath = singletonsPath;
+        this.actionsPath = actionsPath;
+        this.pluginsPath = pluginsPath;
+        this.servicesPath = servicesPath;
 
         if (singletons) {
-            validateSingletons();
-            this.singletons = singletons;
+            if (!isObject(singletons))
+                throw new Error('Parameter "singletons" have to be an object');
+
+            Object.values(singletons).forEach(s => s instanceof Singleton || Singleton.validateConfig(s));
+            this.singletons = Object
+                .entries(singletons)
+                .reduce((res, [name, s]) => {
+                    res[name] = s instanceof Singleton ? s : new Singleton(s);
+                    return res;
+                }, {});
         }
 
         if (actions) {
-            validateActions();
-            this.actions = actions;
+            if (!isObject(actions))
+                throw new Error('Parameter "actions" have to be an object');
+
+            Object.values(actions).forEach(a => a instanceof Action || Action.validateConfig(a));
+            this.actions = Object
+                .entries(actions)
+                .reduce((res, [name, a]) => {
+                    res[name] = a instanceof Action ? a : new Action(a);
+                    return res;
+                }, {});
         }
 
         if (plugins) {
-            validatePlugins(plugins);
-            this.plugins = plugins;
+            if (!isObject(plugins))
+                throw new Error('Parameter "plugins" have to be an object');
+
+            Object.values(plugins).forEach(a => a instanceof Plugin || Plugin.validateConfig(a));
+            this.plugins = Object
+                .entries(plugins)
+                .reduce((res, [name, p]) => {
+                    res[name] = p instanceof Plugin ? p : new Plugin(p);
+                    return res;
+                }, {});
         }
 
         if (services) {
-            validateServices(services);
-            this.services = services;
+            if (!isObject(services))
+                throw new Error('Parameter "services" have to be an object');
+
+            Object.values(services).forEach(s => s instanceof Service || Service.validateConfig(s));
+            this.services = Object
+                .entries(services)
+                .reduce((res, [name, s]) => {
+                    res[name] = s instanceof Service ? s : new Service(s);
+                    return res;
+                }, {});
         }
     }
 
@@ -116,35 +149,3 @@ class Broker {
 }
 
 module.exports = Broker;
-
-
-function validateSingletons(singletons) {
-    if (!isObject(singletons))
-        throw new Error('Parameter "singletons" have to be an object');
-
-    // todo: add validations
-}
-
-
-function validateActions(actions) {
-    if (!isObject(actions))
-        throw new Error('Parameter "actions" have to be an object');
-
-    // todo: add validations
-}
-
-
-function validatePlugins(plugins) {
-    if (!isObject(plugins))
-        throw new Error('Parameter "plugins" have to be an object');
-
-    // todo: add validations
-}
-
-
-function validateServices(services) {
-    if (!isObject(services))
-        throw new Error('Parameter "services" have to be an object');
-
-    // todo: add validations
-}

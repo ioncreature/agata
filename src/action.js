@@ -10,6 +10,7 @@ const
  * Action is shared across all services
  */
 class Action {
+
     static validateConfig({singletons, actions, plugins, fn}) {
         if (!isFunction(fn))
             throw new Error('Parameter "fn" have to be a function');

@@ -68,3 +68,23 @@ describe('Broker Constructor', () => {
     });
 });
 
+
+describe('Service start', () => {
+
+    test('Start simple service', async() => {
+        let started = false;
+
+        const broker = Broker({
+            services: {
+                first: {
+                    start() {
+                        started = true;
+                    },
+                },
+            },
+        });
+
+        await broker.startService('first');
+        expect(started).toBe(true);
+    });
+});

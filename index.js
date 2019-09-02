@@ -5,7 +5,6 @@ const
     Service = require('./src/service'),
     Singleton = require('./src/singleton'),
     Plugin = require('./src/plugin'),
-    Handler = require('./src/handler'),
     Action = require('./src/action');
 
 
@@ -14,4 +13,3 @@ exports.Service = config => new Service(config);
 exports.Singleton = config => new Singleton(config);
 exports.Plugin = config => new Plugin(config);
 exports.Action = config => new Action(config);
-exports.Handler = config => new Handler(config);

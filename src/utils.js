@@ -1,7 +1,8 @@
 'use strict';
 
 const
-    {isString} = require('lodash');
+    {sep: SEPARATOR} = require('path'),
+    {isString, toCamelCase} = require('lodash');
 
 
 exports.isStringArray = value => {
@@ -9,4 +10,9 @@ exports.isStringArray = value => {
         return false;
 
     return value.every(isString);
+};
+
+
+exports.toCamelCase = path => {
+    return String(path).split(SEPARATOR).map(toCamelCase).join('.');
 };

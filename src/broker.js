@@ -91,25 +91,29 @@ class Broker {
 
     /**
      * Starts microservice
-     * @param {string|Service} service
+     * @param {string} name
      * @returns {Promise<void>}
      */
-    async runService(service) {
-        let srv;
-
-        if (isString(service))
-            srv = this.getServiceByName(service);
-        else if (service instanceof Service)
-            srv = service;
-        else
+    async startService(name) {
+        if (!isString(name))
             throw new Error('Parameter "service" have to be a string or instance of Service class');
 
-        if (srv.isRunning())
+        const service = this.getServiceByName(name);
+
+        if (service.isRunning())
             return;
+
+        const singletons = service.singletons;
+        this.loadSingletons(service.singletons);
+        service.loadHandlers();
+        // this.load
+
 
         const registry = await prepareRegistry(service);
 
-        await srv.start(registry);
+
+
+        await service.start(registry);
     }
 
 

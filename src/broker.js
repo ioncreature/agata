@@ -100,17 +100,16 @@ class Broker {
 
         const service = this.getServiceByName(name);
 
-        if (service.isRunning())
+        if (this.isServiceRunning(name))
             return;
 
-        const singletons = service.singletons;
-        this.loadSingletons(service.singletons);
-        service.loadHandlers();
-        // this.load
+        this.services[name].isRunning = true;
+
+        this.loadSingletons(service.getRequiredSingletons());
+        this.loadActions(service.getRequiredActions());
 
 
         const registry = await prepareRegistry(service);
-
 
 
         await service.start(registry);
@@ -149,6 +148,15 @@ class Broker {
             throw new Error(`Service with name "${name}" not found`);
 
         return srv;
+    }
+
+
+    /**
+     * @param {string} name
+     * @returns {boolean}
+     */
+    isServiceRunning(name) {
+        return !!this.services[name].isRunning;
     }
 }
 

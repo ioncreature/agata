@@ -2,7 +2,7 @@
 
 const
     {sep: SEPARATOR} = require('path'),
-    {isString, toCamelCase} = require('lodash');
+    {isString, camelCase} = require('lodash');
 
 
 exports.isStringArray = value => {
@@ -14,5 +14,9 @@ exports.isStringArray = value => {
 
 
 exports.toCamelCase = path => {
-    return String(path).split(SEPARATOR).map(toCamelCase).join('.');
+    return String(path)
+        .replace(/\.handler$/, '')
+        .split(SEPARATOR)
+        .map(camelCase)
+        .join('.');
 };

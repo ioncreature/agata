@@ -34,26 +34,38 @@ describe('Service constructor', () => {
     });
 
 
+    test('Throw if handlers and actions name intersects', () => {
+        expect(() =>
+            Service({start() {}, actions: ['test'], handlers: {test: {fn() {}}}}),
+        ).toThrow();
+    });
+
+
     test('Load handlers from config', () => {
         const srv = Service({
             handlers: {
                 one: Action({fn() {}}),
                 two: {actions: ['one'], fn() {}},
             },
+            start() {},
         });
 
-        expect(srv.isActionExists('one')).toBe(true);
-        expect(srv.isActionExists('two')).toBe(true);
-        expect(srv.isActionExists('three')).toBe(false);
+        expect(srv.isActionRequired('one')).toBe(true);
+        expect(srv.isActionRequired('two')).toBe(true);
+        expect(srv.isActionRequired('three')).toBe(false);
     });
 
+});
+
+
+describe('Handlers loading from file system', () => {
 
     test('Load handlers from FS with default template', () => {
-        const srv = Service({handlersPath: 'handlers'});
+        const srv = Service({handlersPath: 'test/handlers', start() {}});
         expect(srv.getHandlersPath()).toEqual(join(__dirname, 'handlers'));
-        expect(srv.isActionExists('one'));
-        expect(srv.isActionExists('theSecond'));
-        expect(srv.isActionExists('scope.theThird'));
+        expect(srv.isActionRequired('one')).toBe(false);
+        expect(srv.isActionRequired('theSecond')).toBe(true);
+        expect(srv.isActionRequired('scope.theThird')).toBe(true);
     });
 
 });

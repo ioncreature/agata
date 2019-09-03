@@ -5,20 +5,16 @@ const
         isFunction,
         isObject,
         isString,
-        camelCase,
+        intersection,
     } = require('lodash'),
     glob = require('glob'),
-    {isAbsolute, resolve} = require('path'),
+    {isAbsolute, resolve, join} = require('path'),
     {isStringArray, toCamelCase} = require('./utils'),
     Action = require('./action');
 
 
 const
-    DEFAULT_TEMPLATE = '**/*.handler.js',
-    IDLE = 'idle',
-    STARTING = 'starting',
-    RUNNING = 'running',
-    STOPPING = 'stopping';
+    DEFAULT_TEMPLATE = '**/*.handler.js';
 
 
 class Service {
@@ -40,6 +36,12 @@ class Service {
             if (!isObject(handlers))
                 throw new Error('Parameter "handlers" have to be an object');
 
+            if (actions) {
+                const namesIntersection = intersection(actions, Object.keys(handlers));
+                if (namesIntersection.length)
+                    throw new Error(`There are names intersects between actions and handlers: ${namesIntersection}`);
+            }
+
             Object.values(handlers).forEach(h => h instanceof Action || Action.validateConfig(h));
         }
     }
@@ -60,7 +62,6 @@ class Service {
         this.dependencies = {
             singletons: [],
             actions: [],
-            handlers: [],
         };
         this.actions = actions || [];
         this.singletons = singletons || [];
@@ -68,34 +69,45 @@ class Service {
         this.startHandler = start;
         this.stopHandler = stop;
 
+        this.requiredActions = [...this.actions, ...Object.keys(this.handlers)];
+
         if (handlersPath) {
             if (!isString(handlersTemplate))
                 throw new Error('Parameter "handlersTemplate" have to be a string');
 
-            const
-                cwd = isAbsolute(handlersPath) ? handlersPath : resolve(handlersPath), // is resolve() correct here?
-                paths = glob
-                    .sync(handlersTemplate, {cwd, nodir: true})
-                    .map(p => camelCase(p.replace(/\.handler\.js$/, '').replace(/\.js$/, '')));
+            this.handlersPath = isAbsolute(handlersPath) ? handlersPath : resolve(handlersPath); // is resolve() correct here?
+            const paths = glob
+                .sync(handlersTemplate, {cwd: this.handlersPath, nodir: true})
+                .map(p => p.replace(/\.js$/, ''));
 
-            paths.forEach((res, path) => {
+            paths.forEach(path => {
                 const
-                    i = require(resolve(cwd, path)),
+                    i = require(join(this.handlersPath, path)),
                     name = toCamelCase(path);
 
-                if (this.handlers[name])
-                    throw new Error(`Handler with name "${name}" already exists`);
+                if (this.handlers[name] || this.actions[name])
+                    throw new Error(`Action with name "${name}" already exists`);
 
                 this.handlers[name] = i instanceof Action ? i : new Action(i);
+
+                this.requiredActions.push(name);
             });
         }
-
-        this.state = IDLE;
     }
 
 
-    isRunning() {
-        return this.state === RUNNING;
+    getRequiredActions() {
+        return [...this.requiredActions];
+    }
+
+
+    isActionRequired(name) {
+        return !!this.requiredActions.includes(name);
+    }
+
+
+    getHandlersPath() {
+        return this.handlersPath;
     }
 }
 

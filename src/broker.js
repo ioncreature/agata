@@ -105,14 +105,11 @@ class Broker {
 
         this.services[name].isRunning = true;
 
-        this.loadSingletons(service.getRequiredSingletons());
-        this.loadActions(service.getRequiredActions());
+        // this.loadSingletons(service.getRequiredSingletons());
+        // this.loadActions(service.getRequiredActions());
+        // const registry = await prepareRegistry(service);
 
-
-        const registry = await prepareRegistry(service);
-
-
-        await service.start(registry);
+        await service.startHandler({});
     }
 
 

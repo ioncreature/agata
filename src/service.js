@@ -109,6 +109,11 @@ class Service {
     getHandlersPath() {
         return this.handlersPath;
     }
+
+
+    getRequiredSingletons() {
+        return this.singletons;
+    }
 }
 
 module.exports = Service;

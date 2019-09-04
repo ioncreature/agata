@@ -68,4 +68,30 @@ describe('Handlers loading from file system', () => {
         expect(srv.isActionRequired('scope.theThird')).toBe(true);
     });
 
+
+    test('Load handlers from FS with custom template', () => {
+        const srv = Service({
+            handlersPath: 'test/handlers',
+            handlersTemplate: '*.js',
+            start() {},
+        });
+        expect(srv.getHandlersPath()).toEqual(join(__dirname, 'handlers'));
+        expect(srv.isActionRequired('one')).toBe(true);
+        expect(srv.isActionRequired('theSecond')).toBe(true);
+        expect(srv.isActionRequired('scope.theThird')).toBe(false);
+    });
+
+
+    test('Load handlers from FS with custom recursive template', () => {
+        const srv = Service({
+            handlersPath: 'test/handlers',
+            handlersTemplate: '**/*.js',
+            start() {},
+        });
+        expect(srv.getHandlersPath()).toEqual(join(__dirname, 'handlers'));
+        expect(srv.isActionRequired('one')).toBe(true);
+        expect(srv.isActionRequired('theSecond')).toBe(true);
+        expect(srv.isActionRequired('scope.theThird')).toBe(true);
+    });
+
 });

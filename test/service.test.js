@@ -66,16 +66,27 @@ describe('Handlers loading from file system', () => {
 
 
     test('Service throws on invalid handlersTemplate', () => {
-        expect(() => Service({handlersPath: '1', handlersTemplate: 123})).toThrow();
+        expect(() => Service({handlersPath: '1', handlersTemplate: 123, start() {}})).toThrow();
     });
 
 
-    test('Load handlers from FS with default template', () => {
-        const srv = Service({handlersPath: 'test/handlers', start() {}});
-        expect(srv.getHandlersPath()).toEqual(join(__dirname, 'handlers'));
-        expect(srv.isActionRequired('one')).toBe(false);
-        expect(srv.isActionRequired('theSecond')).toBe(true);
-        expect(srv.isActionRequired('scope.theThird')).toBe(true);
+    test.each([
+        ['test/handlers'],
+        [join(__dirname, 'handlers')],
+    ])(
+        'Load handlers from FS with default template path',
+        handlersPath => {
+            const srv = Service({handlersPath, start() {}});
+            expect(srv.getHandlersPath()).toEqual(join(__dirname, 'handlers'));
+            expect(srv.isActionRequired('one')).toBe(false);
+            expect(srv.isActionRequired('theSecond')).toBe(true);
+            expect(srv.isActionRequired('scope.theThird')).toBe(true);
+        },
+    );
+
+
+    test('Throw if file handler name and config handler name matches', () => {
+        expect(() => Service({handlers: {theSecond: {fn() {}}}, handlersPath: 'test/handlers', start() {}})).toThrow();
     });
 
 

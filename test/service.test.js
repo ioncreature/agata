@@ -60,6 +60,16 @@ describe('Service constructor', () => {
 
 describe('Handlers loading from file system', () => {
 
+    test('Service throws on invalid handlersPath', () => {
+        expect(() => Service({handlersPath: 1})).toThrow();
+    });
+
+
+    test('Service throws on invalid handlersTemplate', () => {
+        expect(() => Service({handlersPath: '1', handlersTemplate: 123})).toThrow();
+    });
+
+
     test('Load handlers from FS with default template', () => {
         const srv = Service({handlersPath: 'test/handlers', start() {}});
         expect(srv.getHandlersPath()).toEqual(join(__dirname, 'handlers'));

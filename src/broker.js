@@ -86,6 +86,21 @@ class Broker {
                     return res;
                 }, {});
         }
+
+        // load everything from fs if it is provided
+        if (this.singletonsPath) {}
+        if (this.actionsPath) {}
+        if (this.pluginsPath) {}
+        if (this.servicesPath) {}
+
+        // check for dependencies
+        Object.entries(this.services).forEach(([name, srv]) => {
+            srv.getRequiredSingletons().forEach(singleton => {
+                if (!this.singletons[singleton])
+                    throw new Error(`Service "${name}" requires unknown singleton "${singleton}"`);
+            });
+        });
+
     }
 
 

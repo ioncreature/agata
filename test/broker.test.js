@@ -36,6 +36,14 @@ describe('Broker Constructor', () => {
         expect(() => Broker({services: {}})).not.toThrow();
         expect(
             () => Broker({
+                singletons: {
+                    test1: {start() {}},
+                    test2: Singleton({start() {}, singletons: ['test1']}),
+                },
+                plugins: {
+                    xyz: {singletons: ['test1'], onActionLoad() {}},
+                    xyz2: Plugin({onActionLoad() {}, singletons: ['test']}),
+                },
                 actions: {
                     test: {
                         fn() {},
@@ -48,20 +56,12 @@ describe('Broker Constructor', () => {
                 services: {
                     one: {
                         actions: ['aaa'],
-                        singletons: ['alala'],
+                        singletons: ['test1'],
                         handlers: {test: {fn() {}}},
                         start() {},
                         stop() {},
                     },
                     two: Service({start() {}}),
-                },
-                singletons: {
-                    test1: {start() {}},
-                    test2: Singleton({start() {}, singletons: ['test1']}),
-                },
-                plugins: {
-                    xyz: {onActionLoad() {}},
-                    xyz2: Plugin({onActionLoad() {}, singletons: ['test']}),
                 },
             })
         ).not.toThrow();

@@ -73,7 +73,6 @@ describe('Service start', () => {
 
     test('Start simple service', async() => {
         let started = false;
-
         const broker = Broker({
             services: {
                 first: {
@@ -86,5 +85,57 @@ describe('Service start', () => {
 
         await broker.startService('first');
         expect(started).toBe(true);
+    });
+
+
+    test('Broker throws if service depends on unknown singleton', () => {
+        expect(() => Broker({
+            services: {
+                first: {
+                    singletons: ['s1'],
+                    start() {},
+                },
+            },
+        })).toThrow();
+
+        expect(() => Broker({
+            singletons: {
+                s1: {start() {}},
+            },
+            services: {
+                first: {
+                    singletons: ['s2'],
+                    start() {},
+                },
+            },
+        })).toThrow();
+    });
+
+
+    test('Start service with one singleton', async() => {
+        let serviceStarted = false,
+            singletonStarted = false;
+
+        const broker = Broker({
+            singletons: {
+                s1: {
+                    start() {
+                        singletonStarted = true;
+                    },
+                },
+            },
+            services: {
+                first: {
+                    singletons: ['s1'],
+                    start() {
+                        serviceStarted = true;
+                    },
+                },
+            },
+        });
+
+        await broker.startService('first');
+        expect(singletonStarted).toBe(true);
+        expect(serviceStarted).toBe(true);
     });
 });

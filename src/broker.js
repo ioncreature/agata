@@ -2,7 +2,12 @@
 
 
 const
-    {isObject, isString} = require('lodash'),
+    {
+        isObject,
+        isString,
+        pick,
+    } = require('lodash'),
+    sort = require('toposort'),
     Service = require('./service'),
     Singleton = require('./singleton'),
     Action = require('./action'),
@@ -120,30 +125,13 @@ class Broker {
 
         this.services[name].isRunning = true;
 
-        // this.loadSingletons(service.getRequiredSingletons());
+        const orderedSingletons = this.sortSingletons(service.getRequiredSingletons());
         // this.loadActions(service.getRequiredActions());
-        // const registry = await prepareRegistry(service);
+        // this.loadHandlers(...);
+        const singletons = await this.startSingletons(orderedSingletons);
 
-        await service.startHandler({});
+        await service.startHandler({singletons});
     }
-
-
-    /**
-     * Stops service
-     * @param {string|Service} service
-     * @returns {Promise<void>}
-     */
-    async stopService(service) {}
-
-
-    /**
-     * @param {string|Service} script
-     * @returns {Promise<void>}
-     */
-    async runScript(script) {}
-
-
-    async stopAll() {}
 
 
     /**
@@ -169,6 +157,38 @@ class Broker {
      */
     isServiceRunning(name) {
         return !!this.services[name].isRunning;
+    }
+
+
+    /**
+     * @param requiredSingletons
+     * @throws
+     * @returns {Array<string>}
+     */
+    sortSingletons(requiredSingletons) {
+        const
+            serviceNode = Symbol(),
+            graph = requiredSingletons.map(i => [serviceNode, i]);
+
+        requiredSingletons.forEach(name => {
+            const singleton = this.singletons[name];
+            singleton.getRequiredSingletons().forEach(n => graph.push([name, n]));
+        });
+
+        return sort(graph).reverse().slice(0, -1);
+    }
+
+
+    async startSingletons(names) {
+        const result = {};
+        for (const name of names) {
+            const item = this.singletons[name];
+            if (!item.instance)
+                item.instance = await item.start({singletons: pick(this.singletons, names)});
+
+            result[name] = item.instance;
+        }
+        return result;
     }
 }
 

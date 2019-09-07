@@ -20,7 +20,8 @@
   "homepage": "https://github.com/ioncreature/agata#readme",
   "dependencies": {
     "glob": "7.1.4",
-    "lodash": "4.17.15"
+    "lodash": "4.17.15",
+    "toposort": "2.0.2"
   },
   "devDependencies": {
     "eslint": "6.2.2",

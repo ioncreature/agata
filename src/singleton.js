@@ -25,11 +25,19 @@ class Singleton {
      */
     constructor({singletons, start, stop}) {
         Singleton.validateConfig({singletons, start, stop});
+        /** @type Array<string> */
         this.singletons = singletons || [];
         this.start = start;
         this.stop = stop;
     }
 
+
+    /**
+     * @returns {Array<string>}
+     */
+    getRequiredSingletons() {
+        return [...this.singletons];
+    }
 }
 
 module.exports = Singleton;

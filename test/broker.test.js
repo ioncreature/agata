@@ -85,6 +85,7 @@ describe('Service start', () => {
 
         await broker.startService('first');
         expect(started).toBe(true);
+        expect(broker.isServiceRunning('first')).toBe(true);
     });
 
 

@@ -69,6 +69,32 @@ describe('Broker Constructor', () => {
 });
 
 
+describe('#getServiceByName(name)', () => {
+
+    it('should throw if name invalid', () => {
+        const broker = Broker({});
+        expect(() => broker.getServiceByName()).toThrow();
+        expect(() => broker.getServiceByName(1)).toThrow();
+    });
+
+
+    it('should throw if there is no service with given name', () => {
+        const broker = Broker({});
+        expect(() => broker.getServiceByName('alala')).toThrow();
+    });
+
+
+    it('should return service if name is existing', () => {
+        const
+            service = Service({start() {}}),
+            broker = Broker({services: {service}});
+
+        expect(broker.getServiceByName('service')).toEqual(service);
+    });
+
+});
+
+
 describe('Service start', () => {
 
     test('Start simple service', async() => {
@@ -86,6 +112,26 @@ describe('Service start', () => {
         await broker.startService('first');
         expect(started).toBe(true);
         expect(broker.isServiceRunning('first')).toBe(true);
+    });
+
+
+    test('Start service once', async() => {
+        let started = 0;
+        const broker = Broker({
+            services: {
+                first: {
+                    start() {
+                        started++;
+                    },
+                },
+            },
+        });
+
+        await broker.startService('first');
+        expect(started).toBe(1);
+        expect(broker.isServiceRunning('first')).toBe(true);
+        await broker.startService('first');
+        expect(started).toBe(1);
     });
 
 
@@ -138,5 +184,45 @@ describe('Service start', () => {
         await broker.startService('first');
         expect(singletonStarted).toBe(true);
         expect(serviceStarted).toBe(true);
+    });
+
+
+    test('Start service with singletons depended on other singletons', async() => {
+        const broker = Broker({
+            singletons: {
+                s1: {
+                    start() {
+                        return {hey: 'wow'};
+                    },
+                },
+                s2: {
+                    singletons: ['s1'],
+                    start({singletons: {s1}}) {
+                        expect(s1).toEqual({hey: 'wow'});
+                        return {hey: 'punks'};
+                    },
+                },
+                s3: {
+                    singletons: ['s1', 's2'],
+                    start({singletons: {s1, s2}}) {
+                        expect(s1).toEqual({hey: 'wow'});
+                        expect(s2).toEqual({hey: 'punks'});
+                        return {hey: 'hoy'};
+                    },
+                }
+            },
+            services: {
+                first: {
+                    singletons: ['s3'],
+                    start({singletons: {s1, s2, s3}}) {
+                        expect(s1).toBe(undefined);
+                        expect(s2).toBe(undefined);
+                        expect(s3).toEqual({hey: 'hoy'});
+                    },
+                },
+            },
+        });
+
+        await broker.startService('first');
     });
 });

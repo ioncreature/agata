@@ -5,7 +5,6 @@ const
     {
         isObject,
         isString,
-        pick,
     } = require('lodash'),
     sort = require('toposort'),
     Service = require('./service'),
@@ -93,10 +92,10 @@ class Broker {
         }
 
         // load everything from fs if it is provided
-        if (this.singletonsPath) {}
-        if (this.actionsPath) {}
-        if (this.pluginsPath) {}
-        if (this.servicesPath) {}
+        // if (this.singletonsPath) {}
+        // if (this.actionsPath) {}
+        // if (this.pluginsPath) {}
+        // if (this.servicesPath) {}
 
         // check for dependencies
         Object.entries(this.services).forEach(([name, srv]) => {
@@ -115,9 +114,6 @@ class Broker {
      * @returns {Promise<void>}
      */
     async startService(name) {
-        if (!isString(name))
-            throw new Error('Parameter "service" have to be a string or instance of Service class');
-
         const service = this.getServiceByName(name);
 
         if (this.isServiceRunning(name))
@@ -161,13 +157,13 @@ class Broker {
 
 
     /**
-     * @param requiredSingletons
+     * @param {Array<string>} requiredSingletons
      * @throws
      * @returns {Array<string>}
      */
     sortSingletons(requiredSingletons) {
         const
-            serviceNode = Symbol(),
+            serviceNode = Symbol('service-node'),
             graph = requiredSingletons.map(i => [serviceNode, i]);
 
         requiredSingletons.forEach(name => {
@@ -175,19 +171,29 @@ class Broker {
             singleton.getRequiredSingletons().forEach(n => graph.push([name, n]));
         });
 
-        return sort(graph).reverse().slice(0, -1);
+        return sort(graph)
+            .reverse()
+            .slice(0, -1);
     }
 
 
     async startSingletons(names) {
         const result = {};
-        for (const name of names) {
-            const item = this.singletons[name];
-            if (!item.instance)
-                item.instance = await item.start({singletons: pick(this.singletons, names)});
 
-            result[name] = item.instance;
+        for (const name of names) {
+            const singleton = this.singletons[name];
+
+            if (!singleton.instance) {
+                const deps = names.reduce((res, n) => {
+                    res[n] = this.singletons[n].instance;
+                    return res;
+                }, {});
+                singleton.instance = await singleton.start({singletons: deps});
+            }
+
+            result[name] = singleton.instance;
         }
+
         return result;
     }
 }

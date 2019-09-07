@@ -25,6 +25,7 @@ class Singleton {
      */
     constructor({singletons, start, stop}) {
         Singleton.validateConfig({singletons, start, stop});
+
         /** @type Array<string> */
         this.singletons = singletons || [];
         this.start = start;

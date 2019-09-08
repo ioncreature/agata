@@ -234,3 +234,30 @@ describe('Service start', () => {
         await broker.startService('first');
     });
 });
+
+
+describe('Service actions', () => {
+
+    it('should throw if action requires not included singleton', () => {
+        const broker = Broker({
+            singletons: {
+                s0: {start() {}},
+            },
+            actions: {
+                a1: {
+                    singletons: ['s0'],
+                    fn() {},
+                },
+            },
+            services: {
+                first: {
+                    actions: ['a1'],
+                    start() {},
+                },
+            },
+        });
+
+        expect(() => broker.startService('first')).toThrow();
+    });
+
+});

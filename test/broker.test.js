@@ -190,34 +190,42 @@ describe('Service start', () => {
     test('Start service with singletons depended on other singletons', async() => {
         const broker = Broker({
             singletons: {
+                s0: {
+                    start() {
+                        return {ok: 0};
+                    },
+                },
                 s1: {
                     start() {
-                        return {hey: 'wow'};
+                        return {ok: 1};
                     },
                 },
                 s2: {
-                    singletons: ['s1'],
-                    start({singletons: {s1}}) {
-                        expect(s1).toEqual({hey: 'wow'});
-                        return {hey: 'punks'};
+                    singletons: ['s0', 's1'],
+                    start({singletons: {s0, s1}}) {
+                        expect(s0).toEqual({ok: 0});
+                        expect(s1).toEqual({ok: 1});
+                        return {ok: 2};
                     },
                 },
                 s3: {
                     singletons: ['s1', 's2'],
-                    start({singletons: {s1, s2}}) {
-                        expect(s1).toEqual({hey: 'wow'});
-                        expect(s2).toEqual({hey: 'punks'});
-                        return {hey: 'hoy'};
+                    start({singletons: {s0, s1, s2}}) {
+                        expect(s0).toEqual(undefined);
+                        expect(s1).toEqual({ok: 1});
+                        expect(s2).toEqual({ok: 2});
+                        return {ok: 3};
                     },
-                }
+                },
             },
             services: {
                 first: {
                     singletons: ['s3'],
-                    start({singletons: {s1, s2, s3}}) {
+                    start({singletons: {s0, s1, s2, s3}}) {
+                        expect(s0).toBe(undefined);
                         expect(s1).toBe(undefined);
                         expect(s2).toBe(undefined);
-                        expect(s3).toEqual({hey: 'hoy'});
+                        expect(s3).toEqual({ok: 3});
                     },
                 },
             },

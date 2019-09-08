@@ -5,6 +5,7 @@ const
     {
         isObject,
         isString,
+        pick,
     } = require('lodash'),
     sort = require('toposort'),
     Service = require('./service'),
@@ -126,7 +127,7 @@ class Broker {
         // this.loadHandlers(...);
         const singletons = await this.startSingletons(orderedSingletons);
 
-        await service.startHandler({singletons});
+        await service.startHandler({singletons: pick(singletons, service.getRequiredSingletons())});
     }
 
 
@@ -164,11 +165,15 @@ class Broker {
     sortSingletons(requiredSingletons) {
         const
             serviceNode = Symbol('service-node'),
-            graph = requiredSingletons.map(i => [serviceNode, i]);
+            graph = requiredSingletons.map(i => [serviceNode, i]),
+            allSingletons = new Set(requiredSingletons);
 
         requiredSingletons.forEach(name => {
-            const singleton = this.singletons[name];
-            singleton.getRequiredSingletons().forEach(n => graph.push([name, n]));
+            this.singletons[name].getRequiredSingletons().forEach(n => allSingletons.add(n));
+        });
+
+        allSingletons.forEach(name => {
+            this.singletons[name].getRequiredSingletons().forEach(n => graph.push([name, n]));
         });
 
         return sort(graph)
@@ -188,7 +193,7 @@ class Broker {
                     res[n] = this.singletons[n].instance;
                     return res;
                 }, {});
-                singleton.instance = await singleton.start({singletons: deps});
+                singleton.instance = await singleton.start({singletons: pick(deps, singleton.getRequiredSingletons())});
             }
 
             result[name] = singleton.instance;

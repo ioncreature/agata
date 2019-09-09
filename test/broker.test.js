@@ -360,4 +360,41 @@ describe('Service actions', () => {
         await expect(broker.startService('first')).rejects.toThrow();
     });
 
+
+    it('throws on unknown actions', () => {
+        expect(() => Broker({
+            services: {
+                first: {
+                    actions: ['a1'],
+                    start({actions: {add}}) {
+                        expect(add).any(Function);
+                    },
+                },
+            },
+        })).toThrow();
+    });
+
+
+    it('should load service with one action', async() => {
+        const broker = Broker({
+            actions: {
+                add: {
+                    fn() {
+                        return (a, b) => a + b;
+                    },
+                },
+            },
+            services: {
+                first: {
+                    actions: ['a1'],
+                    start({actions: {add}}) {
+                        expect(add).any(Function);
+                    },
+                },
+            },
+        });
+
+        await broker.startService('first');
+    });
+
 });

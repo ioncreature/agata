@@ -3,6 +3,7 @@
 
 const
     {
+        difference,
         isObject,
         isString,
         pick,
@@ -106,6 +107,19 @@ class Broker {
             });
         });
 
+        Object.entries(this.singletons).forEach(([name, singleton]) => {
+            singleton.getRequiredSingletons().forEach(s => {
+                if (!this.singletons[s])
+                    throw new Error(`Singleton "${name}" requires unknown singleton "${s}"`);
+            });
+        });
+
+        Object.entries(this.actions).forEach(([name, action]) => {
+            action.getRequiredSingletons().forEach(s => {
+                if (!this.singletons[s])
+                    throw new Error(`Action "${name}" requires unknown singleton "${s}"`);
+            });
+        });
     }
 
 
@@ -123,11 +137,15 @@ class Broker {
         this.services[name].isRunning = true;
 
         const orderedSingletons = this.sortSingletons(service.getRequiredSingletons());
-        // this.loadActions(service.getRequiredActions());
-        // this.loadHandlers(...);
-        const singletons = await this.startSingletons(orderedSingletons);
+        const orderedActions = this.sortActions(service.getRequiredActions(), orderedSingletons);
 
-        await service.startHandler({singletons: pick(singletons, service.getRequiredSingletons())});
+        const singletons = await this.startSingletons(orderedSingletons);
+        const actions = this.startActions(orderedActions);
+
+        await service.startHandler({
+            singletons: pick(singletons, service.getRequiredSingletons()),
+            actions,
+        });
     }
 
 
@@ -164,21 +182,31 @@ class Broker {
      */
     sortSingletons(requiredSingletons) {
         const
-            serviceNode = Symbol('service-node'),
+            singletons = this.singletons,
+            serviceNode = Symbol('service-singleton'),
             graph = requiredSingletons.map(i => [serviceNode, i]),
             allSingletons = new Set(requiredSingletons);
 
-        requiredSingletons.forEach(name => {
-            this.singletons[name].getRequiredSingletons().forEach(n => allSingletons.add(n));
-        });
+        requiredSingletons.forEach(name => getDependencies(name));
 
         allSingletons.forEach(name => {
-            this.singletons[name].getRequiredSingletons().forEach(n => graph.push([name, n]));
+            singletons[name].getRequiredSingletons().forEach(n => graph.push([name, n]));
         });
 
         return sort(graph)
             .reverse()
             .slice(0, -1);
+
+        function getDependencies(name, dependedBy = []) {
+            allSingletons.add(name);
+
+            singletons[name].getRequiredSingletons().forEach(n => {
+                if (dependedBy.includes(name))
+                    throw new Error(`Found singletons circular dependency: ${[...dependedBy, name, n].join(' -> ')}`);
+
+                getDependencies(n, [...dependedBy, name]);
+            });
+        }
     }
 
 
@@ -188,12 +216,13 @@ class Broker {
         for (const name of names) {
             const singleton = this.singletons[name];
 
-            if (!singleton.instance) {
-                const deps = names.reduce((res, n) => {
+            if (!singleton.started) {
+                const singletons = singleton.getRequiredSingletons().reduce((res, n) => {
                     res[n] = this.singletons[n].instance;
                     return res;
                 }, {});
-                singleton.instance = await singleton.start({singletons: pick(deps, singleton.getRequiredSingletons())});
+                singleton.started = true;
+                singleton.instance = await singleton.start({singletons});
             }
 
             result[name] = singleton.instance;
@@ -201,6 +230,47 @@ class Broker {
 
         return result;
     }
+
+
+    sortActions(requiredActions, singletons) {
+        const
+            actions = this.actions,
+            allActions = new Set(requiredActions),
+            serviceNode = Symbol('service-action'),
+            graph = requiredActions.map(i => [serviceNode, i]);
+
+        requiredActions.forEach(name => getDependencies(name));
+
+        allActions.forEach(name => {
+            const action = actions[name];
+
+            const notIncluded = difference(action.getRequiredSingletons(), singletons);
+            if (notIncluded.length)
+                throw new Error(`Action "${name}" requires not included singleton(s): "${notIncluded.join('", "')}"`);
+
+            action.getRequiredActions().forEach(a => graph.push([name, a]));
+
+        });
+
+        return sort(graph)
+            .reverse()
+            .slice(0, -1);
+
+        function getDependencies(name, dependedBy = []) {
+            allActions.add(name);
+
+            actions[name].getRequiredActions().forEach(n => {
+                if (dependedBy.includes(name))
+                    throw new Error(`Found actions circular dependency: ${[...dependedBy, name, n].join(' -> ')}`);
+
+                getDependencies(n, [...dependedBy, name]);
+            });
+        }
+
+    }
+
+
+    startActions(names) {}
 }
 
 module.exports = Broker;

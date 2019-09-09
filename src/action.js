@@ -39,6 +39,16 @@ class Action {
         this.plugins = plugins || {};
         this.fn = fn;
     }
+
+
+    getRequiredActions() {
+        return [...this.actions];
+    }
+
+
+    getRequiredSingletons() {
+        return [...this.singletons];
+    }
 }
 
 module.exports = Action;

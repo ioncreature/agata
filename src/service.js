@@ -112,7 +112,7 @@ class Service {
 
 
     getRequiredSingletons() {
-        return this.singletons;
+        return [...this.singletons];
     }
 }
 

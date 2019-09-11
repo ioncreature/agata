@@ -105,6 +105,11 @@ class Broker {
                 if (!this.singletons[singleton])
                     throw new Error(`Service "${name}" requires unknown singleton "${singleton}"`);
             });
+
+            srv.getRequiredActions().forEach(action => {
+                if (!action.startsWith('#') && !this.actions[action])
+                    throw new Error(`Service "${name}" requires unknown action "${action}"`);
+            });
         });
 
         Object.entries(this.singletons).forEach(([name, singleton]) => {

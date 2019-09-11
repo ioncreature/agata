@@ -37,9 +37,18 @@ module.exports = Agata.Service({
 // mixins dir
 // <.>/singleton/postgres
 module.exports = Agata.Singleton({
-    singletons: [],
+    singletons: ['log'],
 
-    async start({singletons}) {},
+    async start({singletons: {log}}) {
+        let i = 0;
+        return {
+            increase() {
+                i++;
+                log(`It is ${i} now`);
+                return i;
+            },
+        };
+    },
     async stop() {},
 });
 
@@ -57,7 +66,7 @@ module.exports = Agata.Action({
         },
     },
 
-    async fn({singletons: {postgres}, actions, plugins}) {
+    async fn({singletons: {postgres}, actions: {user: {}}, plugins}) {
         return async userId => {
             const user = await actions.user.getById(userId);
             return await postgres.User.getFriends(user);
@@ -65,24 +74,6 @@ module.exports = Agata.Action({
     },
 });
 
-
-// handlers dir
-// <.>/service/<name>/handler/getFriends.js
-module.exports = Agata.Handler({
-    singletons: ['postgres'],
-    actions: ['user.getFriends'],
-
-    // imagine this is http handler
-    async fn({singletons, actions}) {
-        return (res, req, next) => {
-            const id = req.params.id;
-            actions.user
-                .getFriends(id)
-                .then(req.json)
-                .catch(next);
-        };
-    },
-});
 
 // scripts
 const serviceBroker = require('../src/broker');

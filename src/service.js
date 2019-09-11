@@ -69,7 +69,7 @@ class Service {
         this.startHandler = start;
         this.stopHandler = stop;
 
-        this.requiredActions = [...this.actions, ...Object.keys(this.handlers)];
+        this.requiredActions = [...this.actions, ...Object.keys(this.handlers).map(h => `#${h}`)];
 
         if (handlersPath) {
             if (!isString(handlersTemplate))
@@ -90,7 +90,7 @@ class Service {
 
                 this.handlers[name] = i instanceof Action ? i : new Action(i);
 
-                this.requiredActions.push(name);
+                this.requiredActions.push(`#${name}`);
             });
         }
     }

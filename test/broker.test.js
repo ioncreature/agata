@@ -28,7 +28,7 @@ describe('Broker Constructor', () => {
     });
 
 
-    test('Constructor should create actions with valid parameters', () => {
+    test('Constructor should create broker with valid parameters', () => {
         expect(() => Broker({})).not.toThrow();
         expect(() => Broker({actions: {}})).not.toThrow();
         expect(() => Broker({singletons: {}})).not.toThrow();
@@ -49,15 +49,15 @@ describe('Broker Constructor', () => {
                         fn() {},
                         plugins: {test: 1},
                         singletons: ['test1', 'test2'],
-                        actions: ['ololo'],
+                        actions: ['test3'],
                     },
                     test3: Action({fn() {}}),
                 },
                 services: {
                     one: {
-                        actions: ['aaa'],
+                        actions: ['test'],
                         singletons: ['test1'],
-                        handlers: {test: {fn() {}}},
+                        handlers: {test5: {fn() {}}},
                         start() {},
                         stop() {},
                     },
@@ -386,9 +386,10 @@ describe('Service actions', () => {
             },
             services: {
                 first: {
-                    actions: ['a1'],
+                    actions: ['add'],
                     start({actions: {add}}) {
                         expect(add).any(Function);
+                        expect(add(5, 7)).toEqual(11);
                     },
                 },
             },

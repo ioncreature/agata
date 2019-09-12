@@ -4,9 +4,11 @@
 const
     {
         difference,
+        isFunction,
         isObject,
         isString,
         pick,
+        set,
     } = require('lodash'),
     sort = require('toposort'),
     Service = require('./service'),
@@ -145,11 +147,11 @@ class Broker {
         const orderedActions = this.sortActions(service.getRequiredActions(), orderedSingletons);
 
         const singletons = await this.startSingletons(orderedSingletons);
-        const actions = this.startActions(orderedActions);
+        const actions = await this.startActions(orderedActions);
 
         await service.startHandler({
             singletons: pick(singletons, service.getRequiredSingletons()),
-            actions,
+            actions: pick(actions, service.getRequiredActions()),
         });
     }
 
@@ -275,7 +277,37 @@ class Broker {
     }
 
 
-    startActions(names) {}
+    async startActions(names) {
+        const result = {};
+
+        for (const name of names) {
+            const action = this.actions[name];
+
+            if (action.initializedFn)
+                return;
+
+            const actions = {};
+            action.getRequiredActions().forEach(actionName => {
+                set(actions, actionName, this.actions[actionName].initializedFn);
+            });
+
+            const singletons = {};
+            action.getRequiredSingletons().forEach(singletonName => {
+                set(singletons, singletonName, this.singletons[singletonName].instance);
+            });
+
+            action.initializedFn = await action.fn({actions, singletons});
+
+            if (!isFunction)
+                throw new Error(`Action "${name}" did not return function`);
+
+            set(result, name, action.initializedFn);
+        }
+
+        return result;
+    }
+
 }
+
 
 module.exports = Broker;

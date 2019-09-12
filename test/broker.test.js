@@ -366,9 +366,7 @@ describe('Service actions', () => {
             services: {
                 first: {
                     actions: ['a1'],
-                    start({actions: {add}}) {
-                        expect(add).any(Function);
-                    },
+                    start() {},
                 },
             },
         })).toThrow();
@@ -388,8 +386,8 @@ describe('Service actions', () => {
                 first: {
                     actions: ['add'],
                     start({actions: {add}}) {
-                        expect(add).any(Function);
-                        expect(add(5, 7)).toEqual(11);
+                        expect(add).toEqual(expect.any(Function));
+                        expect(add(5, 7)).toEqual(12);
                     },
                 },
             },

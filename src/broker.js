@@ -298,7 +298,7 @@ class Broker {
 
             action.initializedFn = await action.fn({actions, singletons});
 
-            if (!isFunction)
+            if (!isFunction(action.initializedFn))
                 throw new Error(`Action "${name}" did not return function`);
 
             set(result, name, action.initializedFn);

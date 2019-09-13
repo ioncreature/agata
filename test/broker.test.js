@@ -396,4 +396,58 @@ describe('Service actions', () => {
         await broker.startService('first');
     });
 
+
+    it('should throw if loaded action does not return function', async() => {
+        const broker = Broker({
+            actions: {
+                oops: {
+                    fn() {
+                        return 'oops';
+                    },
+                },
+            },
+            services: {
+                first: {
+                    actions: ['oops'],
+                    start() {},
+                },
+            },
+        });
+
+        await expect(broker.startService('first')).rejects.toThrow();
+    });
+
+
+    it('should throw if there is circular dependency in actions', async() => {
+        const broker = Broker({
+            actions: {
+                a1: {
+                    actions: ['a2'],
+                    fn() {
+                        return () => {};
+                    },
+                },
+                a2: {
+                    actions: ['a3'],
+                    fn() {
+                        return () => {};
+                    },
+                },
+                a3: {
+                    actions: ['a1'],
+                    fn() {
+                        return () => {};
+                    },
+                },
+            },
+            services: {
+                first: {
+                    actions: ['a1'],
+                    start() {},
+                },
+            },
+        });
+
+        await expect(broker.startService('first')).rejects.toThrow();
+    });
 });

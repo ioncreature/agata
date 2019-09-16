@@ -95,7 +95,7 @@ describe('#getServiceByName(name)', () => {
 });
 
 
-describe('Service start', () => {
+describe('Service singletons', () => {
 
     test('Start simple service', async() => {
         let started = false;
@@ -555,6 +555,59 @@ describe('Service actions', () => {
         await broker.startService('first');
         await broker.startService('second');
         expect(init).toEqual({inc: 1, add: 1});
+    });
+
+});
+
+
+describe('Service handlers', () => {
+
+    it('should start service with handlers', async() => {
+        const broker = Broker({
+            services: {
+                first: {
+                    handlers: {
+                        get5: {
+                            fn() {
+                                return () => 5;
+                            }
+                        },
+                    },
+                    start({handlers: {get5}}) {
+                        expect(get5()).toEqual(5);
+                    },
+                },
+            },
+        });
+
+        await broker.startService('first');
+    });
+
+});
+
+
+describe('Stop service', () => {
+
+    it('should stop service with no singletons', async() => {
+        let i = 0;
+
+        const broker = Broker({
+            services: {
+                first: {
+                    start() {
+                        i = 100;
+                    },
+                    stop() {
+                        i = -1;
+                    },
+                }
+            }
+        });
+
+        await broker.startService('first');
+        expect(i).toEqual(100);
+        await broker.stopService('first');
+        expect(i).toEqual(-1);
     });
 
 });

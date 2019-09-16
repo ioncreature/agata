@@ -283,23 +283,22 @@ class Broker {
         for (const name of names) {
             const action = this.actions[name];
 
-            if (action.initializedFn)
-                return;
+            if (!action.initializedFn) {
+                const actions = {};
+                action.getRequiredActions().forEach(actionName => {
+                    set(actions, actionName, this.actions[actionName].initializedFn);
+                });
 
-            const actions = {};
-            action.getRequiredActions().forEach(actionName => {
-                set(actions, actionName, this.actions[actionName].initializedFn);
-            });
+                const singletons = {};
+                action.getRequiredSingletons().forEach(singletonName => {
+                    set(singletons, singletonName, this.singletons[singletonName].instance);
+                });
 
-            const singletons = {};
-            action.getRequiredSingletons().forEach(singletonName => {
-                set(singletons, singletonName, this.singletons[singletonName].instance);
-            });
+                action.initializedFn = await action.fn({actions, singletons});
 
-            action.initializedFn = await action.fn({actions, singletons});
-
-            if (!isFunction(action.initializedFn))
-                throw new Error(`Action "${name}" did not return function`);
+                if (!isFunction(action.initializedFn))
+                    throw new Error(`Action "${name}" did not return function`);
+            }
 
             set(result, name, action.initializedFn);
         }

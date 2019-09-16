@@ -516,16 +516,20 @@ describe('Service actions', () => {
 
 
     it('should initialize action once even if there is more than one service in one process', async() => {
+        const init = {inc: 0, add: 0};
+
         const broker = Broker({
             actions: {
                 inc: {
                     actions: ['add'],
                     fn({actions: {add}}) {
+                        init.inc ++;
                         return a => add(a, 1);
                     },
                 },
                 add: {
                     fn() {
+                        init.add ++;
                         return (a, b) => a + b;
                     },
                 },
@@ -550,6 +554,7 @@ describe('Service actions', () => {
 
         await broker.startService('first');
         await broker.startService('second');
+        expect(init).toEqual({inc: 1, add: 1});
     });
 
 });

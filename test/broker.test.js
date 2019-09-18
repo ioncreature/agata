@@ -608,6 +608,53 @@ describe('Stop service', () => {
         expect(i).toEqual(100);
         await broker.stopService('first');
         expect(i).toEqual(-1);
+        await broker.startService('first');
+        expect(i).toEqual(100);
+        await broker.stopService('first');
+        expect(i).toEqual(-1);
+    });
+
+
+    it('should stop service with singletons', async() => {
+        let
+            srv,
+            sng;
+
+        const broker = Broker({
+            singletons: {
+                s1: {
+                    start() {
+                        sng = 'started';
+                    },
+                    stop() {
+                        sng = 'stopped';
+                    },
+                },
+            },
+            services: {
+                first: {
+                    singletons: ['s1'],
+                    start() {
+                        srv = 'started';
+                    },
+                    stop() {
+                        srv = 'stopped';
+                    },
+                }
+            }
+        });
+        await broker.startService('first');
+        expect(srv).toBe('started');
+        expect(sng).toBe('started');
+        await broker.stopService('first');
+        expect(srv).toBe('stopped');
+        expect(sng).toBe('stopped');
+        await broker.startService('first');
+        expect(srv).toBe('started');
+        expect(sng).toBe('started');
+        await broker.stopService('first');
+        expect(srv).toBe('stopped');
+        expect(sng).toBe('stopped');
     });
 
 });

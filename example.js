@@ -86,3 +86,38 @@ serviceBroker
     .then(() => console.log('script done'))
     .catch(e => console.error('script error', e));
 
+
+// get dependency tree
+broker.getDependencies(); // =>
+/*
+{
+    services: {
+        users: {
+            singletons: ['postgres', 'log'],
+            actions: ['users.getUser'],
+            handlers: [''],
+        },
+        ...
+    },
+    singletons: {
+        postgres: {
+            dependencies: {singletons: ['log']},
+            dependents: {singletons: ['i18n'], actions: ['users.getUser'], plugins: [], services: ['users']}}},
+        },
+        ...
+    },
+    actions: {
+        'users.getUser': {
+            plugins: {
+                httpContract: {
+                    host: 'users.local',
+                    method: 'GET',
+                    url: '/user/:id',
+                },
+            },
+            dependencies: {singletons: ['log'], actions: ['users.getName']},
+            dependents: {actions: ['friends.getFriend'], handlers: ['users#http.getSomething'], services: []}
+        },
+        ...
+    },
+ */

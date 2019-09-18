@@ -141,18 +141,41 @@ class Broker {
         if (this.isServiceRunning(name))
             return;
 
-        this.services[name].isRunning = true;
+        service.isRunning = true;
 
-        const orderedSingletons = this.sortSingletons(service.getRequiredSingletons());
-        const orderedActions = this.sortActions(service.getRequiredActions(), orderedSingletons);
+        service.dependencies.singletons = this.sortSingletons(service.getRequiredSingletons());
+        service.dependencies.actions = this.sortActions(service.getRequiredActions(), service.dependencies.singletons);
 
-        const singletons = await this.startSingletons(orderedSingletons);
-        const actions = await this.startActions(orderedActions);
+        const singletons = await this.startSingletons(service.dependencies.singletons);
+        const actions = await this.startActions(service.dependencies.actions);
 
         await service.startHandler({
             singletons: pick(singletons, service.getRequiredSingletons()),
             actions: pick(actions, service.getRequiredActions()),
         });
+    }
+
+
+    async stopService(name) {
+        if (!this.isServiceRunning(name))
+            return;
+
+        const service = this.getServiceByName(name);
+        await service.stopHandler();
+
+        const runningServices = this.getRunningServices().filter(n => n !== name);
+
+        const startedSingletons = runningServices.reduce((res, s) => {
+            const srv = this.getServiceByName(s);
+            srv.dependencies.singletons.forEach(singleton => res.add(singleton));
+            return res;
+        }, new Set);
+        const singletonsToStop = service.dependencies.singletons.filter(s => !startedSingletons.has(s));
+
+        for (const singleton of singletonsToStop)
+            await this.singletons[singleton].stop();
+
+        service.isRunning = false;
     }
 
 
@@ -178,7 +201,15 @@ class Broker {
      * @returns {boolean}
      */
     isServiceRunning(name) {
-        return !!this.services[name].isRunning;
+        return !!this.getServiceByName(name).isRunning;
+    }
+
+
+    /**
+     * @returns {Array<string>}
+     */
+    getRunningServices() {
+        return Object.keys(this.services).filter(name => this.isServiceRunning(name));
     }
 
 

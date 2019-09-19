@@ -523,13 +523,13 @@ describe('Service actions', () => {
                 inc: {
                     actions: ['add'],
                     fn({actions: {add}}) {
-                        init.inc ++;
+                        init.inc++;
                         return a => add(a, 1);
                     },
                 },
                 add: {
                     fn() {
-                        init.add ++;
+                        init.add++;
                         return (a, b) => a + b;
                     },
                 },
@@ -570,7 +570,7 @@ describe('Service handlers', () => {
                         get5: {
                             fn() {
                                 return () => 5;
-                            }
+                            },
                         },
                     },
                     start({handlers: {get5}}) {
@@ -600,8 +600,8 @@ describe('Stop service', () => {
                     stop() {
                         i = -1;
                     },
-                }
-            }
+                },
+            },
         });
 
         await broker.startService('first');
@@ -617,8 +617,8 @@ describe('Stop service', () => {
 
     it('should stop service with singletons', async() => {
         let
-            srv,
-            sng;
+            srv = 'init',
+            sng = 'init';
 
         const broker = Broker({
             singletons: {
@@ -640,8 +640,8 @@ describe('Stop service', () => {
                     stop() {
                         srv = 'stopped';
                     },
-                }
-            }
+                },
+            },
         });
         await broker.startService('first');
         expect(srv).toBe('started');
@@ -655,6 +655,37 @@ describe('Stop service', () => {
         await broker.stopService('first');
         expect(srv).toBe('stopped');
         expect(sng).toBe('stopped');
+    });
+
+
+    it('should stop service once even if .stopHandler() called more than once', async() => {
+        let stops = 0;
+
+        const broker = Broker({
+            singletons: {
+                s1: {
+                    start() {},
+                    stop() {
+                        stops++;
+                    },
+                },
+            },
+            services: {
+                first: {
+                    singletons: ['s1'],
+                    start() {},
+                },
+            },
+        });
+
+        await broker.startService('first');
+        await broker.stopService('first');
+        expect(stops).toBe(1);
+        await broker.stopService('first');
+        expect(stops).toBe(1);
+        await broker.startService('first');
+        await broker.stopService('first');
+        expect(stops).toBe(2);
     });
 
 });

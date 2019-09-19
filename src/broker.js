@@ -161,7 +161,8 @@ class Broker {
             return;
 
         const service = this.getServiceByName(name);
-        await service.stopHandler();
+        if (service.stopHandler)
+            await service.stopHandler();
 
         const runningServices = this.getRunningServices().filter(n => n !== name);
 
@@ -172,8 +173,10 @@ class Broker {
         }, new Set);
         const singletonsToStop = service.dependencies.singletons.filter(s => !startedSingletons.has(s));
 
-        for (const singleton of singletonsToStop)
+        for (const singleton of singletonsToStop) {
             await this.singletons[singleton].stop();
+            this.singletons[singleton].started = false;
+        }
 
         service.isRunning = false;
     }

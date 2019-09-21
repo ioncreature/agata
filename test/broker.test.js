@@ -688,4 +688,82 @@ describe('Stop service', () => {
         expect(stops).toBe(2);
     });
 
+
+    it('should stop singletons which are not in use', async() => {
+        const state = {
+            s1: 'init',
+            s2: 'init',
+            s3: 'init',
+            s4: 'init',
+        };
+
+        const broker = Broker({
+            singletons: {
+                s1: {
+                    start() {
+                        state.s1 = 'started';
+                    },
+                    stop() {
+                        state.s1 = 'stopped';
+                    },
+                },
+                s2: {
+                    start() {
+                        state.s2 = 'started';
+                    },
+                    stop() {
+                        state.s2 = 'stopped';
+                    },
+                },
+                s3: {
+                    singletons: ['s4'],
+                    start() {
+                        state.s3 = 'started';
+                    },
+                    stop() {
+                        state.s3 = 'stopped';
+                    },
+                },
+                s4: {
+                    start() {
+                        state.s4 = 'started';
+                    },
+                    stop() {
+                        state.s4 = 'stopped';
+                    },
+                },
+            },
+            services: {
+                first: {
+                    singletons: ['s1', 's3'],
+                    start() {},
+                },
+                second: {
+                    singletons: ['s2', 's4'],
+                    start() {},
+                },
+            },
+        });
+
+        await broker.startService('first');
+        await broker.startService('second');
+        expect(state).toEqual({s1: 'started', s2: 'started', s3: 'started', s4: 'started'});
+
+        await broker.stopService('first');
+        expect(state).toEqual({s1: 'stopped', s2: 'started', s3: 'stopped', s4: 'started'});
+
+        await broker.startService('first');
+        expect(state).toEqual({s1: 'started', s2: 'started', s3: 'started', s4: 'started'});
+
+        await broker.stopService('second');
+        expect(state).toEqual({s1: 'started', s2: 'stopped', s3: 'started', s4: 'started'});
+
+        await broker.startService('second');
+        expect(state).toEqual({s1: 'started', s2: 'started', s3: 'started', s4: 'started'});
+
+        await broker.stopService('first');
+        await broker.stopService('second');
+        expect(state).toEqual({s1: 'stopped', s2: 'stopped', s3: 'stopped', s4: 'stopped'});
+    });
+
 });

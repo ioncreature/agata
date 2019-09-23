@@ -28,7 +28,7 @@ module.exports = Agata.Service({
     localActions: {
         doGoodStuff: {
             singletons: ['postgres'],
-            actions: [''],
+            actions: ['user.makeGood'],
             fn({singletons: {postgres}}) {
                 return () => postgres.doBlaBlaBla();
             },
@@ -38,7 +38,7 @@ module.exports = Agata.Service({
     singletons: ['postgres', 'statistics', 'log'],
     actions: ['user.getFriends', '#doGoodStuff'],
 
-    async start({actions, plugins, singletons, handlers}) {},
+    async start({actions, plugins, singletons, localActions}) {},
     async stop() {},
 });
 

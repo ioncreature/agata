@@ -573,6 +573,7 @@ describe('Service local actions', () => {
                             },
                         },
                     },
+                    // start(reg) {
                     start({localActions: {get5}}) {
                         expect(get5()).toEqual(5);
                     },

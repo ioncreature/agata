@@ -42,7 +42,7 @@ class Service {
                     throw new Error(`There are names intersects between actions and local actions: ${namesIntersection}`);
             }
 
-            Object.values(localActions).forEach(h => h instanceof Action || Action.validateConfig(h));
+            Object.values(localActions).forEach(a => a instanceof Action || Action.validateConfig(a));
         }
     }
 
@@ -67,11 +67,15 @@ class Service {
         };
         this.actions = actions || [];
         this.singletons = singletons || [];
-        this.localActions = localActions || {};
+        this.localActions = {};
         this.startHandler = start;
         this.stopHandler = stop;
 
-        this.requiredActions = [...this.actions, ...Object.keys(this.localActions).map(h => `#${h}`)];
+        if (localActions) {
+            Object.entries(localActions).forEach(([name, action]) => {
+                this.localActions[name] = action instanceof Action ? action : new Action(action);
+            });
+        }
 
         if (localActionsPath) {
             if (!isString(localActionsTemplate))
@@ -93,23 +97,38 @@ class Service {
                     throw new Error(`Action with name "${name}" already exists`);
 
                 this.localActions[name] = i instanceof Action ? i : new Action(i);
-
-                this.requiredActions.push(`#${name}`);
             });
         }
     }
 
-
+    /**
+     * @returns {Array<string>}
+     */
     getRequiredActions() {
-        return [...this.requiredActions];
+        return [...this.actions];
     }
 
 
+    /**
+     * @returns {Array<string>}
+     */
+    getRequiredLocalActions() {
+        return Object.keys(this.localActions);
+    }
+
+
+    /**
+     * @param {string} name
+     * @returns {boolean}
+     */
     isActionRequired(name) {
-        return !!this.requiredActions.includes(name);
+        return this.actions.includes(name) || !!this.localActions[name];
     }
 
 
+    /**
+     * @returns {string}
+     */
     getLocalActionsPath() {
         return this.localActionsPath;
     }

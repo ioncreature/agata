@@ -50,9 +50,9 @@ describe('Service constructor', () => {
             start() {},
         });
 
-        expect(srv.isActionRequired('#one')).toBe(true);
-        expect(srv.isActionRequired('#two')).toBe(true);
-        expect(srv.isActionRequired('#three')).toBe(false);
+        expect(srv.isActionRequired('one')).toBe(true);
+        expect(srv.isActionRequired('two')).toBe(true);
+        expect(srv.isActionRequired('three')).toBe(false);
     });
 
 });
@@ -78,9 +78,9 @@ describe('Handlers loading from file system', () => {
         localActionsPath => {
             const srv = Service({localActionsPath, start() {}});
             expect(srv.getLocalActionsPath()).toEqual(join(__dirname, 'handlers'));
-            expect(srv.isActionRequired('#one')).toBe(false);
-            expect(srv.isActionRequired('#theSecond')).toBe(true);
-            expect(srv.isActionRequired('#scope.theThird')).toBe(true);
+            expect(srv.isActionRequired('one')).toBe(false);
+            expect(srv.isActionRequired('theSecond')).toBe(true);
+            expect(srv.isActionRequired('scope.theThird')).toBe(true);
         },
     );
 
@@ -97,9 +97,9 @@ describe('Handlers loading from file system', () => {
             start() {},
         });
         expect(srv.getLocalActionsPath()).toEqual(join(__dirname, 'handlers'));
-        expect(srv.isActionRequired('#one')).toBe(true);
-        expect(srv.isActionRequired('#theSecond')).toBe(true);
-        expect(srv.isActionRequired('#scope.theThird')).toBe(false);
+        expect(srv.isActionRequired('one')).toBe(true);
+        expect(srv.isActionRequired('theSecond')).toBe(true);
+        expect(srv.isActionRequired('scope.theThird')).toBe(false);
     });
 
 
@@ -110,9 +110,9 @@ describe('Handlers loading from file system', () => {
             start() {},
         });
         expect(srv.getLocalActionsPath()).toEqual(join(__dirname, 'handlers'));
-        expect(srv.isActionRequired('#one')).toBe(true);
-        expect(srv.isActionRequired('#theSecond')).toBe(true);
-        expect(srv.isActionRequired('#scope.theThird')).toBe(true);
+        expect(srv.isActionRequired('one')).toBe(true);
+        expect(srv.isActionRequired('theSecond')).toBe(true);
+        expect(srv.isActionRequired('scope.theThird')).toBe(true);
     });
 
 });

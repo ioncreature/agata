@@ -91,6 +91,11 @@ class Broker {
                 .entries(services)
                 .reduce((res, [name, s]) => {
                     res[name] = s instanceof Service ? s : new Service(s);
+
+                    Object.entries(res[name].localActions).forEach(([actionName, action]) => {
+                        this.actions[`${name}#${actionName}`] = action;
+                    });
+
                     return res;
                 }, {});
         }
@@ -144,14 +149,20 @@ class Broker {
         service.isRunning = true;
 
         service.dependencies.singletons = this.sortSingletons(service.getRequiredSingletons());
-        service.dependencies.actions = this.sortActions(service.getRequiredActions(), service.dependencies.singletons);
+        service.dependencies.actions = this.sortActions(
+            service.getRequiredActions(),
+            service.dependencies.singletons,
+        );
 
-        const singletons = await this.startSingletons(service.dependencies.singletons);
-        const actions = await this.startActions(service.dependencies.actions);
+        const
+            singletons = await this.startSingletons(service.dependencies.singletons),
+            actions = await this.startActions(service.dependencies.actions),
+            localActions = await this.startActions(service.getRequiredLocalActions().map(a => `${name}#${a}`));
 
         await service.startHandler({
             singletons: pick(singletons, service.getRequiredSingletons()),
             actions: pick(actions, service.getRequiredActions()),
+            localActions,
         });
     }
 
@@ -290,7 +301,6 @@ class Broker {
                 throw new Error(`Action "${name}" requires not included singleton(s): "${notIncluded.join('", "')}"`);
 
             action.getRequiredActions().forEach(a => graph.push([name, a]));
-
         });
 
         return sort(graph)
@@ -307,7 +317,6 @@ class Broker {
                 getDependencies(n, [...dependedBy, name]);
             });
         }
-
     }
 
 
@@ -334,7 +343,8 @@ class Broker {
                     throw new Error(`Action "${name}" did not return function`);
             }
 
-            set(result, name, action.initializedFn);
+            const realName = name.includes('#') ? name.split('#')[1] : name;
+            set(result, realName, action.initializedFn);
         }
 
         return result;

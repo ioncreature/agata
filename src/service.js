@@ -19,7 +19,7 @@ const
 
 class Service {
 
-    static validateConfig({start, stop, singletons, actions, handlers}) {
+    static validateConfig({start, stop, singletons, actions, localActions}) {
         if (!isFunction(start))
             throw new Error('Parameter "start" have to be a function');
 
@@ -32,17 +32,17 @@ class Service {
         if (actions && !isStringArray(actions))
             throw new Error('Parameter "actions" have to be an array of strings');
 
-        if (handlers) {
-            if (!isObject(handlers))
-                throw new Error('Parameter "handlers" have to be an object');
+        if (localActions) {
+            if (!isObject(localActions))
+                throw new Error('Parameter "localActions" have to be an object');
 
             if (actions) {
-                const namesIntersection = intersection(actions, Object.keys(handlers));
+                const namesIntersection = intersection(actions, Object.keys(localActions));
                 if (namesIntersection.length)
-                    throw new Error(`There are names intersects between actions and handlers: ${namesIntersection}`);
+                    throw new Error(`There are names intersects between actions and local actions: ${namesIntersection}`);
             }
 
-            Object.values(handlers).forEach(h => h instanceof Action || Action.validateConfig(h));
+            Object.values(localActions).forEach(h => h instanceof Action || Action.validateConfig(h));
         }
     }
 
@@ -52,12 +52,14 @@ class Service {
      * @param {function} [stop]
      * @param {Array<string>} [singletons]
      * @param {Array<string>} [actions]
-     * @param {Object} [handlers] object containing service handlers. Handlers are local to given service actions
-     * @param {string} [handlersPath] path to look for handlers, scanning is recursive
-     * @param {string} [handlersTemplate=DEFAULT_TEMPLATE] glob to load handlers
+     * @param {Object} [localActions] object containing service actions.
+     * @param {string} [localActionsPath] path to look for local actions, scanning is recursive
+     * @param {string} [localActionsTemplate=DEFAULT_TEMPLATE] glob to load local actions
      */
-    constructor({start, stop, singletons, actions, handlers, handlersPath, handlersTemplate = DEFAULT_TEMPLATE}) {
-        Service.validateConfig({start, stop, singletons, actions, handlers, handlersPath});
+    constructor({
+        start, stop, singletons, actions, localActions, localActionsPath, localActionsTemplate = DEFAULT_TEMPLATE,
+    }) {
+        Service.validateConfig({start, stop, singletons, actions, localActions, localActionsPath});
 
         this.dependencies = {
             singletons: [],
@@ -65,30 +67,32 @@ class Service {
         };
         this.actions = actions || [];
         this.singletons = singletons || [];
-        this.handlers = handlers || {};
+        this.localActions = localActions || {};
         this.startHandler = start;
         this.stopHandler = stop;
 
-        this.requiredActions = [...this.actions, ...Object.keys(this.handlers).map(h => `#${h}`)];
+        this.requiredActions = [...this.actions, ...Object.keys(this.localActions).map(h => `#${h}`)];
 
-        if (handlersPath) {
-            if (!isString(handlersTemplate))
-                throw new Error('Parameter "handlersTemplate" have to be a string');
+        if (localActionsPath) {
+            if (!isString(localActionsTemplate))
+                throw new Error('Parameter "localActionsTemplate" have to be a string');
 
-            this.handlersPath = isAbsolute(handlersPath) ? handlersPath : resolve(handlersPath); // is resolve() correct here?
+            this.localActionsPath = isAbsolute(localActionsPath)
+                ? localActionsPath : resolve(localActionsPath); // is resolve() correct here?
+
             const paths = glob
-                .sync(handlersTemplate, {cwd: this.handlersPath, nodir: true})
+                .sync(localActionsTemplate, {cwd: this.localActionsPath, nodir: true})
                 .map(p => p.replace(/\.js$/, ''));
 
             paths.forEach(path => {
                 const
-                    i = require(join(this.handlersPath, path)),
+                    i = require(join(this.localActionsPath, path)),
                     name = toCamelCase(path);
 
-                if (this.handlers[name] || this.actions[name])
+                if (this.localActions[name] || this.actions[name])
                     throw new Error(`Action with name "${name}" already exists`);
 
-                this.handlers[name] = i instanceof Action ? i : new Action(i);
+                this.localActions[name] = i instanceof Action ? i : new Action(i);
 
                 this.requiredActions.push(`#${name}`);
             });
@@ -106,8 +110,8 @@ class Service {
     }
 
 
-    getHandlersPath() {
-        return this.handlersPath;
+    getLocalActionsPath() {
+        return this.localActionsPath;
     }
 
 

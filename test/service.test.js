@@ -18,9 +18,9 @@ describe('Service constructor', () => {
         expect(() => Service({start() {}, stop: 1})).toThrow();
         expect(() => Service({start() {}, singletons: 1})).toThrow();
         expect(() => Service({start() {}, actions: 1})).toThrow();
-        expect(() => Service({start() {}, handlers: 1})).toThrow();
-        expect(() => Service({start() {}, handlers: {test: {}}})).toThrow();
-        expect(() => Service({start() {}, handlers: {test: {fn: 1}}})).toThrow();
+        expect(() => Service({start() {}, localActions: 1})).toThrow();
+        expect(() => Service({start() {}, localActions: {test: {}}})).toThrow();
+        expect(() => Service({start() {}, localActions: {test: {fn: 1}}})).toThrow();
     });
 
 
@@ -29,21 +29,21 @@ describe('Service constructor', () => {
         expect(() => Service({start() {}, stop() {}})).not.toThrow();
         expect(() => Service({start() {}, singletons: ['test']})).not.toThrow();
         expect(() => Service({start() {}, actions: ['test']})).not.toThrow();
-        expect(() => Service({start() {}, handlers: {}})).not.toThrow();
-        expect(() => Service({start() {}, handlers: {test: {fn() {}}}})).not.toThrow();
+        expect(() => Service({start() {}, localActions: {}})).not.toThrow();
+        expect(() => Service({start() {}, localActions: {test: {fn() {}}}})).not.toThrow();
     });
 
 
     test('Throw if handlers and actions name intersects', () => {
         expect(() =>
-            Service({start() {}, actions: ['test'], handlers: {test: {fn() {}}}}),
+            Service({start() {}, actions: ['test'], localActions: {test: {fn() {}}}}),
         ).toThrow();
     });
 
 
     test('Load handlers from config', () => {
         const srv = Service({
-            handlers: {
+            localActions: {
                 one: Action({fn() {}}),
                 two: {actions: ['one'], fn() {}},
             },
@@ -61,12 +61,12 @@ describe('Service constructor', () => {
 describe('Handlers loading from file system', () => {
 
     test('Service throws on invalid handlersPath', () => {
-        expect(() => Service({handlersPath: 1})).toThrow();
+        expect(() => Service({localActionsPath: 1})).toThrow();
     });
 
 
     test('Service throws on invalid handlersTemplate', () => {
-        expect(() => Service({handlersPath: '1', handlersTemplate: 123, start() {}})).toThrow();
+        expect(() => Service({localActionsPath: '1', localActionsTemplate: 123, start() {}})).toThrow();
     });
 
 
@@ -75,9 +75,9 @@ describe('Handlers loading from file system', () => {
         [join(__dirname, 'handlers')],
     ])(
         'Load handlers from FS template path: %s',
-        handlersPath => {
-            const srv = Service({handlersPath, start() {}});
-            expect(srv.getHandlersPath()).toEqual(join(__dirname, 'handlers'));
+        localActionsPath => {
+            const srv = Service({localActionsPath, start() {}});
+            expect(srv.getLocalActionsPath()).toEqual(join(__dirname, 'handlers'));
             expect(srv.isActionRequired('#one')).toBe(false);
             expect(srv.isActionRequired('#theSecond')).toBe(true);
             expect(srv.isActionRequired('#scope.theThird')).toBe(true);
@@ -86,17 +86,17 @@ describe('Handlers loading from file system', () => {
 
 
     test('Throw if file handler name and config handler name matches', () => {
-        expect(() => Service({handlers: {theSecond: {fn() {}}}, handlersPath: 'test/handlers', start() {}})).toThrow();
+        expect(() => Service({localActions: {theSecond: {fn() {}}}, localActionsPath: 'test/handlers', start() {}})).toThrow();
     });
 
 
     test('Load handlers from FS with custom template', () => {
         const srv = Service({
-            handlersPath: 'test/handlers',
-            handlersTemplate: '*.js',
+            localActionsPath: 'test/handlers',
+            localActionsTemplate: '*.js',
             start() {},
         });
-        expect(srv.getHandlersPath()).toEqual(join(__dirname, 'handlers'));
+        expect(srv.getLocalActionsPath()).toEqual(join(__dirname, 'handlers'));
         expect(srv.isActionRequired('#one')).toBe(true);
         expect(srv.isActionRequired('#theSecond')).toBe(true);
         expect(srv.isActionRequired('#scope.theThird')).toBe(false);
@@ -105,11 +105,11 @@ describe('Handlers loading from file system', () => {
 
     test('Load handlers from FS with custom recursive template', () => {
         const srv = Service({
-            handlersPath: 'test/handlers',
-            handlersTemplate: '**/*.js',
+            localActionsPath: 'test/handlers',
+            localActionsTemplate: '**/*.js',
             start() {},
         });
-        expect(srv.getHandlersPath()).toEqual(join(__dirname, 'handlers'));
+        expect(srv.getLocalActionsPath()).toEqual(join(__dirname, 'handlers'));
         expect(srv.isActionRequired('#one')).toBe(true);
         expect(srv.isActionRequired('#theSecond')).toBe(true);
         expect(srv.isActionRequired('#scope.theThird')).toBe(true);

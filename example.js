@@ -23,11 +23,20 @@ broker
 // services dir
 // <.>/service/friends/index.js
 module.exports = Agata.Service({
-    handlersPath: './handlers', // local for service
+    localActionsPath: './handlers', // local for service
+
+    localActions: {
+        doGoodStuff: {
+            singletons: ['postgres'],
+            actions: [''],
+            fn({singletons: {postgres}}) {
+                return () => postgres.doBlaBlaBla();
+            },
+        },
+    },
 
     singletons: ['postgres', 'statistics', 'log'],
-    actions: ['user.getFriends'],
-    handlers: [],
+    actions: ['user.getFriends', '#doGoodStuff'],
 
     async start({actions, plugins, singletons, handlers}) {},
     async stop() {},
@@ -42,7 +51,7 @@ module.exports = Agata.Singleton({
     async start({singletons: {log}}) {
         let i = 0;
         return {
-            increase() {
+            inc() {
                 i++;
                 log(`It is ${i} now`);
                 return i;
@@ -94,8 +103,12 @@ broker.getDependencies(); // =>
     services: {
         users: {
             singletons: ['postgres', 'log'],
-            actions: ['users.getUser'],
-            handlers: [''],
+            actions: ['users.getUser', '#http.getUser'],
+            localActions: {
+                'http.getUser': {
+                    dependencies: {singletons: ['log'], actions: ['users.getUser']},
+                },
+            },
         },
         ...
     },
@@ -120,4 +133,6 @@ broker.getDependencies(); // =>
         },
         ...
     },
+    plugins: {
+    }
  */

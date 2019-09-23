@@ -57,7 +57,7 @@ describe('Broker Constructor', () => {
                     one: {
                         actions: ['test'],
                         singletons: ['test1'],
-                        handlers: {test5: {fn() {}}},
+                        localActions: {test5: {fn() {}}},
                         start() {},
                         stop() {},
                     },
@@ -560,20 +560,20 @@ describe('Service actions', () => {
 });
 
 
-describe('Service handlers', () => {
+describe('Service local actions', () => {
 
-    it('should start service with handlers', async() => {
+    it('should start service with local actions', async() => {
         const broker = Broker({
             services: {
                 first: {
-                    handlers: {
+                    localActions: {
                         get5: {
                             fn() {
                                 return () => 5;
                             },
                         },
                     },
-                    start({handlers: {get5}}) {
+                    start({localActions: {get5}}) {
                         expect(get5()).toEqual(5);
                     },
                 },

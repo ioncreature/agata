@@ -4,12 +4,9 @@ const
     {
         isFunction,
         isObject,
-        isString,
         intersection,
     } = require('lodash'),
-    glob = require('glob'),
-    {isAbsolute, resolve, join} = require('path'),
-    {isStringArray, toCamelCase} = require('./utils'),
+    {isStringArray, loadFiles} = require('./utils'),
     Action = require('./action');
 
 
@@ -71,32 +68,19 @@ class Service {
         this.startHandler = start;
         this.stopHandler = stop;
 
-        if (localActions) {
+        if (localActions)
             Object.entries(localActions).forEach(([name, action]) => {
                 this.localActions[name] = action instanceof Action ? action : new Action(action);
             });
-        }
 
         if (localActionsPath) {
-            if (!isString(localActionsTemplate))
-                throw new Error('Parameter "localActionsTemplate" have to be a string');
+            const files = loadFiles({path: localActionsPath, template: localActionsTemplate});
 
-            this.localActionsPath = isAbsolute(localActionsPath)
-                ? localActionsPath : resolve(localActionsPath); // is resolve() correct here?
-
-            const paths = glob
-                .sync(localActionsTemplate, {cwd: this.localActionsPath, nodir: true})
-                .map(p => p.replace(/\.js$/, ''));
-
-            paths.forEach(path => {
-                const
-                    i = require(join(this.localActionsPath, path)),
-                    name = toCamelCase(path);
-
+            files.forEach(([name, file]) => {
                 if (this.localActions[name] || this.actions[name])
                     throw new Error(`Action with name "${name}" already exists`);
 
-                this.localActions[name] = i instanceof Action ? i : new Action(i);
+                this.localActions[name] = file instanceof Action ? file : new Action(file);
             });
         }
     }
@@ -123,14 +107,6 @@ class Service {
      */
     isActionRequired(name) {
         return this.actions.includes(name) || !!this.localActions[name];
-    }
-
-
-    /**
-     * @returns {string}
-     */
-    getLocalActionsPath() {
-        return this.localActionsPath;
     }
 
 

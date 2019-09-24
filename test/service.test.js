@@ -77,7 +77,6 @@ describe('Handlers loading from file system', () => {
         'Load handlers from FS template path: %s',
         localActionsPath => {
             const srv = Service({localActionsPath, start() {}});
-            expect(srv.getLocalActionsPath()).toEqual(join(__dirname, 'handlers'));
             expect(srv.isActionRequired('one')).toBe(false);
             expect(srv.isActionRequired('theSecond')).toBe(true);
             expect(srv.isActionRequired('scope.theThird')).toBe(true);
@@ -96,7 +95,6 @@ describe('Handlers loading from file system', () => {
             localActionsTemplate: '*.js',
             start() {},
         });
-        expect(srv.getLocalActionsPath()).toEqual(join(__dirname, 'handlers'));
         expect(srv.isActionRequired('one')).toBe(true);
         expect(srv.isActionRequired('theSecond')).toBe(true);
         expect(srv.isActionRequired('scope.theThird')).toBe(false);
@@ -109,7 +107,6 @@ describe('Handlers loading from file system', () => {
             localActionsTemplate: '**/*.js',
             start() {},
         });
-        expect(srv.getLocalActionsPath()).toEqual(join(__dirname, 'handlers'));
         expect(srv.isActionRequired('one')).toBe(true);
         expect(srv.isActionRequired('theSecond')).toBe(true);
         expect(srv.isActionRequired('scope.theThird')).toBe(true);

@@ -32,16 +32,29 @@ class Broker {
      * @param {Object} [plugins]
      * @param {Object} [services]
      */
-    constructor({singletons, actions, plugins, services, singletonsPath, actionsPath, pluginsPath, servicesPath}) {
+    constructor({
+        singletons,
+        actions,
+        plugins,
+        services,
+        singletonsPath,
+        actionsPath,
+        pluginsPath,
+        servicesPath,
+    }) {
         this.singletons = {};
         this.actions = {};
         this.plugins = {};
         this.services = {};
 
         this.singletonsPath = singletonsPath;
+        this.singletonsTemplate = singletonsPath;
         this.actionsPath = actionsPath;
+        this.actionsTemplate = actionsPath;
         this.pluginsPath = pluginsPath;
+        this.pluginsTemplate = pluginsPath;
         this.servicesPath = servicesPath;
+        this.servicesTemplate = servicesPath;
 
         if (singletons) {
             if (!isObject(singletons))

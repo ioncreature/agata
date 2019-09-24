@@ -60,12 +60,12 @@ describe('Service constructor', () => {
 
 describe('Handlers loading from file system', () => {
 
-    test('Service throws on invalid handlersPath', () => {
-        expect(() => Service({localActionsPath: 1})).toThrow();
+    test('Service throws on invalid localActionsPath', () => {
+        expect(() => Service({localActionsPath: [], start() {}})).toThrow();
     });
 
 
-    test('Service throws on invalid handlersTemplate', () => {
+    test('Service throws on invalid localActionsTemplate', () => {
         expect(() => Service({localActionsPath: '1', localActionsTemplate: 123, start() {}})).toThrow();
     });
 

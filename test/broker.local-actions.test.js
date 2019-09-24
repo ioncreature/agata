@@ -84,6 +84,7 @@ describe('Service local actions', () => {
                             },
                         },
                     },
+                    singletons: ['s1'],
                     start({localActions: {get5}}) {
                         expect(get5()).toEqual(5);
                     },

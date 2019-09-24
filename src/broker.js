@@ -148,16 +148,18 @@ class Broker {
 
         service.isRunning = true;
 
+        const localActionsNames = service.getRequiredLocalActions().map(a => `${name}#${a}`);
+
         service.dependencies.singletons = this.sortSingletons(service.getRequiredSingletons());
         service.dependencies.actions = this.sortActions(
-            service.getRequiredActions(),
+            [...service.getRequiredActions(), ...localActionsNames],
             service.dependencies.singletons,
         );
 
         const
             singletons = await this.startSingletons(service.dependencies.singletons),
             actions = await this.startActions(service.dependencies.actions),
-            localActions = await this.startActions(service.getRequiredLocalActions().map(a => `${name}#${a}`));
+            localActions = await this.startActions(localActionsNames);
 
         await service.startHandler({
             singletons: pick(singletons, service.getRequiredSingletons()),
@@ -298,7 +300,10 @@ class Broker {
 
             const notIncluded = difference(action.getRequiredSingletons(), singletons);
             if (notIncluded.length)
-                throw new Error(`Action "${name}" requires not included singleton(s): "${notIncluded.join('", "')}"`);
+                throw new Error(
+                    `Action "${name}" requires not included singleton(s): "${notIncluded.join('", "')}". ` +
+                    'Please add them to service definition',
+                );
 
             action.getRequiredActions().forEach(a => graph.push([name, a]));
         });

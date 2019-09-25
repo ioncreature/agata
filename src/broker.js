@@ -14,7 +14,12 @@ const
     Service = require('./service'),
     Singleton = require('./singleton'),
     Action = require('./action'),
-    Plugin = require('./plugin');
+    Plugin = require('./plugin'),
+    {loadFiles} = require('./utils');
+
+
+const
+    DEFAULT_SERVICE_TEMPLATE = '*/index.js';
 
 
 /**
@@ -47,14 +52,15 @@ class Broker {
         this.plugins = {};
         this.services = {};
 
+        this.servicesPath = servicesPath;
+        this.servicesTemplate = DEFAULT_SERVICE_TEMPLATE;
+
         this.singletonsPath = singletonsPath;
         this.singletonsTemplate = singletonsPath;
         this.actionsPath = actionsPath;
         this.actionsTemplate = actionsPath;
         this.pluginsPath = pluginsPath;
         this.pluginsTemplate = pluginsPath;
-        this.servicesPath = servicesPath;
-        this.servicesTemplate = servicesPath;
 
         if (singletons) {
             if (!isObject(singletons))
@@ -105,21 +111,32 @@ class Broker {
                 .reduce((res, [name, s]) => {
                     res[name] = s instanceof Service ? s : new Service(s);
 
-                    Object.entries(res[name].localActions).forEach(([actionName, action]) => {
-                        this.actions[`${name}#${actionName}`] = action;
-                    });
-
                     return res;
                 }, {});
         }
+
+        if (this.servicesPath) {
+            const files = loadFiles({path: this.servicesPath, template: this.servicesTemplate});
+
+            files.forEach(([name, file]) => {
+                if (this.services[name])
+                    throw new Error(`Service with name "${name}" already exists`);
+
+                this.services[name] = file instanceof Service ? file : new Service(file);
+            });
+        }
+
+        Object.entries(this.services).forEach(([name, srv]) => {
+            Object.entries(srv.localActions).forEach(([actionName, action]) => {
+                this.actions[`${name}#${actionName}`] = action;
+            });
+        });
 
         // load everything from fs if it is provided
         // if (this.singletonsPath) {}
         // if (this.actionsPath) {}
         // if (this.pluginsPath) {}
-        // if (this.servicesPath) {}
 
-        // check for dependencies
         Object.entries(this.services).forEach(([name, srv]) => {
             srv.getRequiredSingletons().forEach(singleton => {
                 if (!this.singletons[singleton])

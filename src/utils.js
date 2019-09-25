@@ -17,6 +17,7 @@ exports.isStringArray = value => {
 exports.toCamelCase = path => {
     return String(path)
         .replace(/\.handler$/, '')
+        .replace(/\.index$/, '')
         .split(SEPARATOR)
         .map(camelCase)
         .join('.');
@@ -27,9 +28,9 @@ exports.toCamelCase = path => {
  * Load file and translates its name to dot separated camelCase name
  * @param {string} path
  * @param {string} template
- * @returns {Array<*>}
+ * @returns {Array<Object>}
  */
-exports.loadFiles = ({path, template}) => {
+exports.loadFiles = ({path, template, }) => {
     if (!isString(path))
         throw new Error('Parameter "path" have to be a string');
 

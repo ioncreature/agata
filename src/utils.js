@@ -7,10 +7,10 @@ const
 
 
 exports.DEFAULT_ACTION_TEMPLATE = '**/*.action.js';
-exports.DEFAULT_ACTION_TEMPLATE_REMOVE = /\.action.js$/;
+exports.DEFAULT_ACTION_TEMPLATE_REMOVE = /\.action.js$/i;
 
 exports.DEFAULT_SERVICE_TEMPLATE = '*/index.js';
-exports.DEFAULT_SERVICE_TEMPLATE_REMOVE = /\\index.js$/;
+exports.DEFAULT_SERVICE_TEMPLATE_REMOVE = new RegExp(`${SEPARATOR}index.js$`, 'i');
 
 
 exports.isStringArray = value => {

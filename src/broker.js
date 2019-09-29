@@ -113,6 +113,7 @@ class Broker {
                 }, {});
         }
 
+        // load services from fs
         if (this.servicesPath) {
             const files = loadFiles({
                 path: this.servicesPath,

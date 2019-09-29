@@ -20,4 +20,14 @@ describe('Load services from file system', () => {
         },
     );
 
+
+    it('should throw if services names are the same', () => {
+        expect(() => Broker({
+            servicesPath: 'test/services',
+            services: {
+                first: {start() {}}
+            }
+        })).toThrow(/already exists/);
+    });
+
 });

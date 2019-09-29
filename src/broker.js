@@ -11,15 +11,15 @@ const
         set,
     } = require('lodash'),
     sort = require('toposort'),
+    {
+        loadFiles,
+        DEFAULT_SERVICE_TEMPLATE,
+        DEFAULT_SERVICE_TEMPLATE_REMOVE,
+    } = require('./utils'),
     Service = require('./service'),
     Singleton = require('./singleton'),
     Action = require('./action'),
-    Plugin = require('./plugin'),
-    {loadFiles} = require('./utils');
-
-
-const
-    DEFAULT_SERVICE_TEMPLATE = '*/index.js';
+    Plugin = require('./plugin');
 
 
 /**
@@ -53,8 +53,6 @@ class Broker {
         this.services = {};
 
         this.servicesPath = servicesPath;
-        this.servicesTemplate = DEFAULT_SERVICE_TEMPLATE;
-
         this.singletonsPath = singletonsPath;
         this.singletonsTemplate = singletonsPath;
         this.actionsPath = actionsPath;
@@ -116,7 +114,11 @@ class Broker {
         }
 
         if (this.servicesPath) {
-            const files = loadFiles({path: this.servicesPath, template: this.servicesTemplate});
+            const files = loadFiles({
+                path: this.servicesPath,
+                template: DEFAULT_SERVICE_TEMPLATE,
+                remove: DEFAULT_SERVICE_TEMPLATE_REMOVE,
+            });
 
             files.forEach(([name, file]) => {
                 if (this.services[name])

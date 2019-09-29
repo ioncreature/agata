@@ -6,12 +6,13 @@ const
         isObject,
         intersection,
     } = require('lodash'),
-    {isStringArray, loadFiles} = require('./utils'),
+    {
+        isStringArray,
+        loadFiles,
+        DEFAULT_ACTION_TEMPLATE,
+        DEFAULT_ACTION_TEMPLATE_REMOVE,
+    } = require('./utils'),
     Action = require('./action');
-
-
-const
-    DEFAULT_TEMPLATE = '**/*.handler.js';
 
 
 class Service {
@@ -51,10 +52,16 @@ class Service {
      * @param {Array<string>} [actions]
      * @param {Object} [localActions] object containing service actions.
      * @param {string} [localActionsPath] path to look for local actions, scanning is recursive
-     * @param {string} [localActionsTemplate=DEFAULT_TEMPLATE] glob to load local actions
+     * @param {string} [localActionsTemplate=DEFAULT_ACTION_TEMPLATE] glob to load local actions
      */
     constructor({
-        start, stop, singletons, actions, localActions, localActionsPath, localActionsTemplate = DEFAULT_TEMPLATE,
+        start,
+        stop,
+        singletons,
+        actions,
+        localActions,
+        localActionsPath,
+        localActionsTemplate = DEFAULT_ACTION_TEMPLATE,
     }) {
         Service.validateConfig({start, stop, singletons, actions, localActions, localActionsPath});
 
@@ -74,7 +81,11 @@ class Service {
             });
 
         if (localActionsPath) {
-            const files = loadFiles({path: localActionsPath, template: localActionsTemplate});
+            const files = loadFiles({
+                path: localActionsPath,
+                template: localActionsTemplate,
+                remove: DEFAULT_ACTION_TEMPLATE_REMOVE,
+            });
 
             files.forEach(([name, file]) => {
                 if (this.localActions[name] || this.actions[name])

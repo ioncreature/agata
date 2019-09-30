@@ -9,8 +9,12 @@ const
 exports.DEFAULT_ACTION_TEMPLATE = '**/*.action.js';
 exports.DEFAULT_ACTION_TEMPLATE_REMOVE = /\.action.js$/i;
 
+exports.DEFAULT_SINGLETON_TEMPLATE = '**/*.singleton.js';
+exports.DEFAULT_SINGLETON_TEMPLATE_REMOVE = /\.singleton.js$/i;
+
 exports.DEFAULT_SERVICE_TEMPLATE = '*/index.js';
 exports.DEFAULT_SERVICE_TEMPLATE_REMOVE = new RegExp(`${SEPARATOR}index.js$`, 'i');
+
 
 exports.isStringArray = value => {
     if (!Array.isArray(value))

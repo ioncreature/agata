@@ -39,7 +39,7 @@ describe('Load actions from file system', () => {
         ['test/actions'],
         [join(__dirname, 'actions')],
     ])(
-        'should load services from FS, path: %s',
+        'should load actions from FS, path: %s',
         async actionsPath => {
             let result = 0;
 
@@ -60,6 +60,7 @@ describe('Load actions from file system', () => {
         },
     );
 
+
     it('should throw if actions names match', async() => {
         expect(() => Broker({
             actionsPath: 'test/actions',
@@ -70,5 +71,50 @@ describe('Load actions from file system', () => {
             },
         })).toThrow(/already exists/);
     });
+
+});
+
+
+describe('Load singletons from file system', () => {
+
+    it.each([
+        ['test/singletons'],
+        [join(__dirname, 'singletons')],
+    ])(
+        'should load singletons from FS, path: %s',
+        async singletonsPath => {
+            let result = 0;
+
+            const broker = Broker({
+                singletonsPath,
+                services: {
+                    first: {
+                        singletons: ['db'],
+                        start({singletons: {db}}) {
+                            result = db.getThree();
+                        },
+                    },
+                },
+            });
+
+            await broker.startService('first');
+            expect(result).toEqual(3);
+        },
+    );
+
+
+    it('should throw if singletons names match', async() => {
+        expect(() => Broker({
+            singletonsPath: 'test/singletons',
+            singletons: {
+                config: {
+                    start() {
+                        return {two: 2};
+                    },
+                },
+            },
+        })).toThrow(/already exists/);
+    });
+
 });
 

@@ -17,6 +17,8 @@ const
         DEFAULT_SERVICE_TEMPLATE_REMOVE,
         DEFAULT_ACTION_TEMPLATE,
         DEFAULT_ACTION_TEMPLATE_REMOVE,
+        DEFAULT_SINGLETON_TEMPLATE,
+        DEFAULT_SINGLETON_TEMPLATE_REMOVE,
     } = require('./utils'),
     Service = require('./service'),
     Singleton = require('./singleton'),
@@ -153,8 +155,23 @@ class Broker {
             });
         }
 
-        // load everything from fs if it is provided
-        // if (this.singletonsPath) {}
+        // load singletons from fs
+        if (this.singletonsPath) {
+            const files = loadFiles({
+                path: this.singletonsPath,
+                template: DEFAULT_SINGLETON_TEMPLATE,
+                remove: DEFAULT_SINGLETON_TEMPLATE_REMOVE,
+            });
+
+            files.forEach(([name, file]) => {
+                if (this.singletons[name])
+                    throw new Error(`Singleton with name "${name}" already exists`);
+
+                this.singletons[name] = file instanceof Singleton ? file : new Singleton(file);
+            });
+        }
+
+        // load plugins from fs
         // if (this.pluginsPath) {}
 
         Object.entries(this.services).forEach(([name, srv]) => {

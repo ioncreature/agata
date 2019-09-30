@@ -12,7 +12,6 @@ exports.DEFAULT_ACTION_TEMPLATE_REMOVE = /\.action.js$/i;
 exports.DEFAULT_SERVICE_TEMPLATE = '*/index.js';
 exports.DEFAULT_SERVICE_TEMPLATE_REMOVE = new RegExp(`${SEPARATOR}index.js$`, 'i');
 
-
 exports.isStringArray = value => {
     if (!Array.isArray(value))
         return false;
@@ -28,7 +27,7 @@ exports.isStringArray = value => {
  * @param {string|RegExp} remove
  * @returns {Array<Object>}
  */
-exports.loadFiles = ({path, template, remove = ''}) => {
+exports.loadFiles = ({path, template, remove}) => {
     if (!isString(path))
         throw new Error('Parameter "path" have to be a string');
 

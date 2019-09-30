@@ -1,3 +1,7 @@
 'use strict';
 
-exports.start = () => {};
+const {Service} = require('../../../index');
+
+module.exports = Service({
+    start() {},
+});

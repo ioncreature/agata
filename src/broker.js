@@ -15,6 +15,8 @@ const
         loadFiles,
         DEFAULT_SERVICE_TEMPLATE,
         DEFAULT_SERVICE_TEMPLATE_REMOVE,
+        DEFAULT_ACTION_TEMPLATE,
+        DEFAULT_ACTION_TEMPLATE_REMOVE,
     } = require('./utils'),
     Service = require('./service'),
     Singleton = require('./singleton'),
@@ -135,9 +137,24 @@ class Broker {
             });
         });
 
+        // load actions from fs
+        if (this.actionsPath) {
+            const files = loadFiles({
+                path: this.actionsPath,
+                template: DEFAULT_ACTION_TEMPLATE,
+                remove: DEFAULT_ACTION_TEMPLATE_REMOVE,
+            });
+
+            files.forEach(([name, file]) => {
+                if (this.actions[name])
+                    throw new Error(`Action with name "${name}" already exists`);
+
+                this.actions[name] = file instanceof Action ? file : new Action(file);
+            });
+        }
+
         // load everything from fs if it is provided
         // if (this.singletonsPath) {}
-        // if (this.actionsPath) {}
         // if (this.pluginsPath) {}
 
         Object.entries(this.services).forEach(([name, srv]) => {

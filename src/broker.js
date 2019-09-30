@@ -11,6 +11,15 @@ const
         set,
     } = require('lodash'),
     sort = require('toposort'),
+    {
+        loadFiles,
+        DEFAULT_SERVICE_TEMPLATE,
+        DEFAULT_SERVICE_TEMPLATE_REMOVE,
+        DEFAULT_ACTION_TEMPLATE,
+        DEFAULT_ACTION_TEMPLATE_REMOVE,
+        DEFAULT_SINGLETON_TEMPLATE,
+        DEFAULT_SINGLETON_TEMPLATE_REMOVE,
+    } = require('./utils'),
     Service = require('./service'),
     Singleton = require('./singleton'),
     Action = require('./action'),
@@ -32,16 +41,28 @@ class Broker {
      * @param {Object} [plugins]
      * @param {Object} [services]
      */
-    constructor({singletons, actions, plugins, services, singletonsPath, actionsPath, pluginsPath, servicesPath}) {
+    constructor({
+        singletons,
+        actions,
+        plugins,
+        services,
+        singletonsPath,
+        actionsPath,
+        pluginsPath,
+        servicesPath,
+    }) {
         this.singletons = {};
         this.actions = {};
         this.plugins = {};
         this.services = {};
 
-        this.singletonsPath = singletonsPath;
-        this.actionsPath = actionsPath;
-        this.pluginsPath = pluginsPath;
         this.servicesPath = servicesPath;
+        this.singletonsPath = singletonsPath;
+        this.singletonsTemplate = singletonsPath;
+        this.actionsPath = actionsPath;
+        this.actionsTemplate = actionsPath;
+        this.pluginsPath = pluginsPath;
+        this.pluginsTemplate = pluginsPath;
 
         if (singletons) {
             if (!isObject(singletons))
@@ -92,21 +113,67 @@ class Broker {
                 .reduce((res, [name, s]) => {
                     res[name] = s instanceof Service ? s : new Service(s);
 
-                    Object.entries(res[name].localActions).forEach(([actionName, action]) => {
-                        this.actions[`${name}#${actionName}`] = action;
-                    });
-
                     return res;
                 }, {});
         }
 
-        // load everything from fs if it is provided
-        // if (this.singletonsPath) {}
-        // if (this.actionsPath) {}
-        // if (this.pluginsPath) {}
-        // if (this.servicesPath) {}
+        // load services from fs
+        if (this.servicesPath) {
+            const files = loadFiles({
+                path: this.servicesPath,
+                template: DEFAULT_SERVICE_TEMPLATE,
+                remove: DEFAULT_SERVICE_TEMPLATE_REMOVE,
+            });
 
-        // check for dependencies
+            files.forEach(([name, file]) => {
+                if (this.services[name])
+                    throw new Error(`Service with name "${name}" already exists`);
+
+                this.services[name] = file instanceof Service ? file : new Service(file);
+            });
+        }
+
+        Object.entries(this.services).forEach(([name, srv]) => {
+            Object.entries(srv.localActions).forEach(([actionName, action]) => {
+                this.actions[`${name}#${actionName}`] = action;
+            });
+        });
+
+        // load actions from fs
+        if (this.actionsPath) {
+            const files = loadFiles({
+                path: this.actionsPath,
+                template: DEFAULT_ACTION_TEMPLATE,
+                remove: DEFAULT_ACTION_TEMPLATE_REMOVE,
+            });
+
+            files.forEach(([name, file]) => {
+                if (this.actions[name])
+                    throw new Error(`Action with name "${name}" already exists`);
+
+                this.actions[name] = file instanceof Action ? file : new Action(file);
+            });
+        }
+
+        // load singletons from fs
+        if (this.singletonsPath) {
+            const files = loadFiles({
+                path: this.singletonsPath,
+                template: DEFAULT_SINGLETON_TEMPLATE,
+                remove: DEFAULT_SINGLETON_TEMPLATE_REMOVE,
+            });
+
+            files.forEach(([name, file]) => {
+                if (this.singletons[name])
+                    throw new Error(`Singleton with name "${name}" already exists`);
+
+                this.singletons[name] = file instanceof Singleton ? file : new Singleton(file);
+            });
+        }
+
+        // load plugins from fs
+        // if (this.pluginsPath) {}
+
         Object.entries(this.services).forEach(([name, srv]) => {
             srv.getRequiredSingletons().forEach(singleton => {
                 if (!this.singletons[singleton])

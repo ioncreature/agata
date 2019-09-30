@@ -4,17 +4,15 @@ const
     {
         isFunction,
         isObject,
-        isString,
         intersection,
     } = require('lodash'),
-    glob = require('glob'),
-    {isAbsolute, resolve, join} = require('path'),
-    {isStringArray, toCamelCase} = require('./utils'),
+    {
+        isStringArray,
+        loadFiles,
+        DEFAULT_ACTION_TEMPLATE,
+        DEFAULT_ACTION_TEMPLATE_REMOVE,
+    } = require('./utils'),
     Action = require('./action');
-
-
-const
-    DEFAULT_TEMPLATE = '**/*.handler.js';
 
 
 class Service {
@@ -54,10 +52,16 @@ class Service {
      * @param {Array<string>} [actions]
      * @param {Object} [localActions] object containing service actions.
      * @param {string} [localActionsPath] path to look for local actions, scanning is recursive
-     * @param {string} [localActionsTemplate=DEFAULT_TEMPLATE] glob to load local actions
+     * @param {string} [localActionsTemplate=DEFAULT_ACTION_TEMPLATE] glob to load local actions
      */
     constructor({
-        start, stop, singletons, actions, localActions, localActionsPath, localActionsTemplate = DEFAULT_TEMPLATE,
+        start,
+        stop,
+        singletons,
+        actions,
+        localActions,
+        localActionsPath,
+        localActionsTemplate = DEFAULT_ACTION_TEMPLATE,
     }) {
         Service.validateConfig({start, stop, singletons, actions, localActions, localActionsPath});
 
@@ -71,32 +75,23 @@ class Service {
         this.startHandler = start;
         this.stopHandler = stop;
 
-        if (localActions) {
+        if (localActions)
             Object.entries(localActions).forEach(([name, action]) => {
                 this.localActions[name] = action instanceof Action ? action : new Action(action);
             });
-        }
 
         if (localActionsPath) {
-            if (!isString(localActionsTemplate))
-                throw new Error('Parameter "localActionsTemplate" have to be a string');
+            const files = loadFiles({
+                path: localActionsPath,
+                template: localActionsTemplate,
+                remove: DEFAULT_ACTION_TEMPLATE_REMOVE,
+            });
 
-            this.localActionsPath = isAbsolute(localActionsPath)
-                ? localActionsPath : resolve(localActionsPath); // is resolve() correct here?
-
-            const paths = glob
-                .sync(localActionsTemplate, {cwd: this.localActionsPath, nodir: true})
-                .map(p => p.replace(/\.js$/, ''));
-
-            paths.forEach(path => {
-                const
-                    i = require(join(this.localActionsPath, path)),
-                    name = toCamelCase(path);
-
+            files.forEach(([name, file]) => {
                 if (this.localActions[name] || this.actions[name])
                     throw new Error(`Action with name "${name}" already exists`);
 
-                this.localActions[name] = i instanceof Action ? i : new Action(i);
+                this.localActions[name] = file instanceof Action ? file : new Action(file);
             });
         }
     }
@@ -123,14 +118,6 @@ class Service {
      */
     isActionRequired(name) {
         return this.actions.includes(name) || !!this.localActions[name];
-    }
-
-
-    /**
-     * @returns {string}
-     */
-    getLocalActionsPath() {
-        return this.localActionsPath;
     }
 
 

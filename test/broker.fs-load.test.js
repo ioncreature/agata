@@ -69,7 +69,6 @@ describe('Load actions from file system', () => {
                 },
             },
         })).toThrow(/already exists/);
-    },
-    );
+    });
 });
 

@@ -6,19 +6,19 @@ const
 
 class Plugin {
 
-    static validateConfig({singletons, onActionLoad}) {
-        if (!isFunction(onActionLoad))
-            throw new Error('Parameter "onActionLoad" have to be a function');
+    static validateConfig({singletons, start}) {
+        if (!isFunction(start))
+            throw new Error('Plugin parameter "start" have to be a function');
 
         if (singletons && !isStringArray(singletons))
             throw new Error('Parameter "singletons" have to be an array of strings');
     }
 
 
-    constructor({singletons, onActionLoad}) {
-        Plugin.validateConfig({singletons, onActionLoad});
+    constructor({singletons, start}) {
+        Plugin.validateConfig({singletons, start});
         this.singletons = singletons;
-        this.onActionLoad = onActionLoad;
+        this.onActionLoad = start;
     }
 
 }

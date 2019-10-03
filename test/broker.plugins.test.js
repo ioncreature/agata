@@ -6,6 +6,34 @@ const
 
 describe('Plugins for actions', () => {
 
+    it('should throw if plugin requires unknown singleton', async() => {
+        expect(() => Broker({
+            plugins: {
+                p1: {
+                    singletons: ['s0'],
+                    start() {
+                        return () => {};
+                    },
+                },
+            },
+            actions: {
+                a1: {
+                    plugins: {
+                        p1: {ok: 1},
+                    },
+                    fn() {},
+                },
+            },
+            services: {
+                first: {
+                    actions: ['a1'],
+                    start() {},
+                },
+            },
+        })).toThrow(/requires unknown singleton/);
+    });
+
+
     it('should init plugin for local action', async() => {
         const broker = Broker({
             plugins: {
@@ -19,7 +47,7 @@ describe('Plugins for actions', () => {
                     start() {
                         return params => ({params});
                     },
-                })
+                }),
             },
             singletons: {
                 s1: {
@@ -41,6 +69,7 @@ describe('Plugins for actions', () => {
             },
             services: {
                 first: {
+                    singletons: ['s1'],
                     actions: ['makeGood'],
                     start({actions: {makeGood}}) {
                         expect(makeGood()).toEqual({
@@ -53,7 +82,7 @@ describe('Plugins for actions', () => {
                             },
                         });
                     },
-                }
+                },
             },
         });
 

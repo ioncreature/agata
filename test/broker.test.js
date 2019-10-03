@@ -41,8 +41,8 @@ describe('Broker Constructor', () => {
                     test2: Singleton({start() {}, singletons: ['test1']}),
                 },
                 plugins: {
-                    xyz: {singletons: ['test1'], onActionLoad() {}},
-                    xyz2: Plugin({onActionLoad() {}, singletons: ['test']}),
+                    xyz: {singletons: ['test1'], start() {}},
+                    xyz2: Plugin({singletons: ['test2'], start() {}}),
                 },
                 actions: {
                     test: {

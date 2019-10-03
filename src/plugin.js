@@ -17,8 +17,12 @@ class Plugin {
 
     constructor({singletons, start}) {
         Plugin.validateConfig({singletons, start});
-        this.singletons = singletons;
-        this.onActionLoad = start;
+        this.singletons = singletons || [];
+        this.start = start;
+    }
+
+    getRequiredSingletons() {
+        return [...this.singletons];
     }
 
 }

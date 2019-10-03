@@ -49,6 +49,16 @@ class Action {
     getRequiredSingletons() {
         return [...this.singletons];
     }
+
+
+    getRequiredPlugins() {
+        return Object.keys(this.plugins);
+    }
+
+
+    getPluginParams(name) {
+        return this.plugins[name] ? {...this.plugins[name]} : undefined;
+    }
 }
 
 module.exports = Action;

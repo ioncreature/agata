@@ -40,8 +40,8 @@ describe('Plugins for actions', () => {
                 s0: {
                     start() {
                         return {ok: 5};
-                    }
-                }
+                    },
+                },
             },
             plugins: {
                 p1: {
@@ -110,7 +110,7 @@ describe('Plugins for actions', () => {
                     fn({plugins: {p1}}) {
                         return () => ({p1});
                     },
-                }
+                },
             },
             services: {
                 first: {

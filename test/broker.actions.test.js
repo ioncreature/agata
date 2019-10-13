@@ -20,7 +20,7 @@ describe('Service actions', () => {
                     start() {},
                 },
             },
-        })).toThrow();
+        })).toThrow(/requires unknown singleton/);
     });
 
 

@@ -75,9 +75,10 @@ module.exports = Agata.Action({
         },
     },
 
-    async fn({singletons: {postgres}, actions: {user: {}}, plugins}) {
+    async fn({singletons: {postgres}, actions: {user: {}}, plugins: {httpContract}}) {
         return async userId => {
             const user = await actions.user.getById(userId);
+            await httpContract();
             return await postgres.User.getFriends(user);
         };
     },

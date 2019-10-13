@@ -199,6 +199,14 @@ class Broker {
                     throw new Error(`Action "${name}" requires unknown singleton "${s}"`);
             });
         });
+
+
+        Object.entries(this.plugins).forEach(([name, plugin]) => {
+            plugin.getRequiredSingletons().forEach(s => {
+                if (!this.singletons[s])
+                    throw new Error(`Plugin "${name}" requires unknown singleton "${s}"`);
+            });
+        });
     }
 
 
@@ -213,8 +221,6 @@ class Broker {
         if (this.isServiceRunning(name))
             return;
 
-        service.isRunning = true;
-
         const localActionsNames = service.getRequiredLocalActions().map(a => `${name}#${a}`);
 
         service.dependencies.singletons = this.sortSingletons(service.getRequiredSingletons());
@@ -222,17 +228,25 @@ class Broker {
             [...service.getRequiredActions(), ...localActionsNames],
             service.dependencies.singletons,
         );
+        service.dependencies.plugins = this.getServicePlugins(
+            service.dependencies.actions,
+            service.dependencies.singletons,
+        );
 
         const
             singletons = await this.startSingletons(service.dependencies.singletons),
+            plugins = await this.startPlugins(service.dependencies.plugins),
             actions = await this.startActions(service.dependencies.actions),
             localActions = await this.startActions(localActionsNames);
 
         await service.startHandler({
             singletons: pick(singletons, service.getRequiredSingletons()),
             actions: pick(actions, service.getRequiredActions()),
+            plugins,
             localActions,
         });
+
+        service.isRunning = true;
     }
 
 
@@ -254,8 +268,10 @@ class Broker {
         const singletonsToStop = service.dependencies.singletons.filter(s => !startedSingletons.has(s));
 
         for (const singleton of singletonsToStop) {
-            await this.singletons[singleton].stop();
-            this.singletons[singleton].started = false;
+            const s = this.singletons[singleton];
+            if (s.stop)
+                await s.stop();
+            s.started = false;
         }
 
         service.isRunning = false;
@@ -398,28 +414,93 @@ class Broker {
         for (const name of names) {
             const action = this.actions[name];
 
-            if (!action.initializedFn) {
-                const actions = {};
-                action.getRequiredActions().forEach(actionName => {
-                    set(actions, actionName, this.actions[actionName].initializedFn);
-                });
-
-                const singletons = {};
-                action.getRequiredSingletons().forEach(singletonName => {
-                    set(singletons, singletonName, this.singletons[singletonName].instance);
-                });
-
-                action.initializedFn = await action.fn({actions, singletons});
-
-                if (!isFunction(action.initializedFn))
-                    throw new Error(`Action "${name}" did not return function`);
-            }
+            action.initializedFn = await this.initAction(name); // todo: solve race condition here
 
             const realName = name.includes('#') ? name.split('#')[1] : name;
             set(result, realName, action.initializedFn);
         }
 
         return result;
+    }
+
+
+    async initAction(name) {
+        const action = this.actions[name];
+
+        if (action.initializedFn)
+            return action.initializedFn;
+
+        const actions = {};
+        action.getRequiredActions().forEach(actionName => {
+            set(actions, actionName, this.actions[actionName].initializedFn);
+        });
+
+        const singletons = {};
+        action.getRequiredSingletons().forEach(singletonName => {
+            set(singletons, singletonName, this.singletons[singletonName].instance);
+        });
+
+        const plugins = {};
+        await Promise.all(action.getRequiredPlugins().map(async pluginName => {
+            const plugin = this.plugins[pluginName];
+            plugins[pluginName] = await plugin.instance(action.getPluginParams(pluginName));
+        }));
+
+        const fn = await action.fn({actions, singletons, plugins});
+
+        if (!isFunction(fn))
+            throw new Error(`Action "${name}" did not return function`);
+
+        return fn;
+    }
+
+
+    async startPlugins(names) {
+        const plugins = {};
+
+        await Promise.all(names.map(async name => {
+            const plugin = this.plugins[name];
+
+            if (!plugin.instance) {
+                const singletons = plugin.getRequiredSingletons().reduce((res, singletonName) => {
+                    res[singletonName] = this.singletons[singletonName].instance;
+                    return res;
+                }, {});
+
+                plugin.instance = await plugin.start({singletons});
+            }
+
+            plugins[name] = plugin.instance;
+        }));
+
+        return plugins;
+    }
+
+
+    getServicePlugins(actionsNames, singletons) {
+        const plugins = [];
+
+        actionsNames.forEach(actionName => {
+            const action = this.actions[actionName];
+            action.getRequiredPlugins().forEach(pluginName => {
+                if (!plugins.includes(pluginName))
+                    plugins.push(pluginName);
+
+            });
+        });
+
+        plugins.forEach(pluginName => {
+            const plugin = this.plugins[pluginName];
+
+            const notIncluded = difference(plugin.getRequiredSingletons(), singletons);
+            if (notIncluded.length)
+                throw new Error(
+                    `Plugin "${pluginName}" requires not included singleton(s): "${notIncluded.join('", "')}". ` +
+                    'Please add them to service definition or don\'t use this plugin',
+                );
+        });
+
+        return plugins;
     }
 
 }

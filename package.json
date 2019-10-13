@@ -7,7 +7,7 @@
     "test": "jest",
     "coverage": "jest --coverage",
     "lint": "eslint .",
-    "coveralls": "jest --coverage && cat ./tests/coverage/lcov.info | coveralls"
+    "coveralls": "jest --coverage && cat ./coverage/lcov.info | coveralls"
   },
   "repository": {
     "type": "git",

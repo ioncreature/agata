@@ -1,4 +1,6 @@
 # Agata - The microservice framework
+[![Build Status](https://travis-ci.org/ioncreature/agata.svg?branch=master)](https://travis-ci.org/ioncreature/agata)
+
 There was few main points to create this framework
 
 ### Precise dependency tracking

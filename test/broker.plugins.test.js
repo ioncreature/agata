@@ -34,6 +34,43 @@ describe('Plugins for actions', () => {
     });
 
 
+    it('should throw if plugin requires not included singleton', async() => {
+        const broker = Broker({
+            singletons: {
+                s0: {
+                    start() {
+                        return {ok: 5};
+                    }
+                }
+            },
+            plugins: {
+                p1: {
+                    singletons: ['s0'],
+                    start() {
+                        return () => {};
+                    },
+                },
+            },
+            actions: {
+                a1: {
+                    plugins: {
+                        p1: {ok: 1},
+                    },
+                    fn() {},
+                },
+            },
+            services: {
+                first: {
+                    actions: ['a1'],
+                    start() {},
+                },
+            },
+        });
+
+        await expect(broker.startService('first')).rejects.toThrow(/requires not included singleton/);
+    });
+
+
     it('should init plugin for local action', async() => {
         const broker = Broker({
             plugins: {
@@ -66,12 +103,20 @@ describe('Plugins for actions', () => {
                         return () => ({p1, p2});
                     },
                 },
+                makeBad: {
+                    plugins: {
+                        p1: {key: 'value2'},
+                    },
+                    fn({plugins: {p1}}) {
+                        return () => ({p1});
+                    },
+                }
             },
             services: {
                 first: {
                     singletons: ['s1'],
-                    actions: ['makeGood'],
-                    start({actions: {makeGood}}) {
+                    actions: ['makeGood', 'makeBad'],
+                    start({actions: {makeGood, makeBad}}) {
                         expect(makeGood()).toEqual({
                             p1: {
                                 params: {key: 'value'},
@@ -81,11 +126,19 @@ describe('Plugins for actions', () => {
                                 params: {value: 'key'},
                             },
                         });
+                        expect(makeBad()).toEqual({
+                            p1: {
+                                params: {key: 'value2'},
+                                s1: {ok: 1},
+                            },
+                        });
                     },
                 },
             },
         });
 
+        await broker.startService('first');
+        await broker.stopService('first');
         await broker.startService('first');
     });
 

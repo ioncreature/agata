@@ -268,8 +268,10 @@ class Broker {
         const singletonsToStop = service.dependencies.singletons.filter(s => !startedSingletons.has(s));
 
         for (const singleton of singletonsToStop) {
-            await this.singletons[singleton].stop();
-            this.singletons[singleton].started = false;
+            const s = this.singletons[singleton];
+            if (s.stop)
+                await s.stop();
+            s.started = false;
         }
 
         service.isRunning = false;
@@ -412,34 +414,44 @@ class Broker {
         for (const name of names) {
             const action = this.actions[name];
 
-            if (!action.initializedFn) {
-                const actions = {};
-                action.getRequiredActions().forEach(actionName => {
-                    set(actions, actionName, this.actions[actionName].initializedFn);
-                });
-
-                const singletons = {};
-                action.getRequiredSingletons().forEach(singletonName => {
-                    set(singletons, singletonName, this.singletons[singletonName].instance);
-                });
-
-                const plugins = {};
-                await Promise.all(action.getRequiredPlugins().map(async pluginName => {
-                    const plugin = this.plugins[pluginName];
-                    plugins[pluginName] = await plugin.instance(action.getPluginParams(pluginName));
-                }));
-
-                action.initializedFn = await action.fn({actions, singletons, plugins});
-
-                if (!isFunction(action.initializedFn))
-                    throw new Error(`Action "${name}" did not return function`);
-            }
+            action.initializedFn = await this.initAction(name); // todo: solve race condition here
 
             const realName = name.includes('#') ? name.split('#')[1] : name;
             set(result, realName, action.initializedFn);
         }
 
         return result;
+    }
+
+
+    async initAction(name) {
+        const action = this.actions[name];
+
+        if (action.initializedFn)
+            return action.initializedFn;
+
+        const actions = {};
+        action.getRequiredActions().forEach(actionName => {
+            set(actions, actionName, this.actions[actionName].initializedFn);
+        });
+
+        const singletons = {};
+        action.getRequiredSingletons().forEach(singletonName => {
+            set(singletons, singletonName, this.singletons[singletonName].instance);
+        });
+
+        const plugins = {};
+        await Promise.all(action.getRequiredPlugins().map(async pluginName => {
+            const plugin = this.plugins[pluginName];
+            plugins[pluginName] = await plugin.instance(action.getPluginParams(pluginName));
+        }));
+
+        const fn = await action.fn({actions, singletons, plugins});
+
+        if (!isFunction(fn))
+            throw new Error(`Action "${name}" did not return function`);
+
+        return fn;
     }
 
 

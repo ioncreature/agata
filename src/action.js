@@ -57,7 +57,7 @@ class Action {
 
 
     getPluginParams(name) {
-        return this.plugins[name] ? {...this.plugins[name]} : undefined;
+        return this.plugins[name] && {...this.plugins[name]};
     }
 }
 

@@ -6,7 +6,30 @@ const
 
 describe('Broker#getDependencies()', () => {
 
-    it('should return dependency tree', async() => {
+    it('should return only one service in dependency tree', () => {
+        const broker = Broker({
+            services: {
+                first: {start() {}},
+            },
+        });
+
+        expect(broker.getDependencies()).toEqual({
+            services: {
+                first: {
+                    singletons: [],
+                    actions: [],
+                    localActions: [],
+                    plugins: [],
+                },
+            },
+            actions: {},
+            singletons: {},
+            plugins: {},
+        });
+    });
+
+
+    it.skip('should return complex dependency tree', async() => {
         const broker = Broker({
             singletons: {
                 config: {
@@ -63,7 +86,7 @@ describe('Broker#getDependencies()', () => {
                             singletons: ['postgres'],
                             actions: ['user.getById'],
                             fn: () => () => {},
-                        }
+                        },
                     },
                     start() {},
                 },
@@ -72,7 +95,7 @@ describe('Broker#getDependencies()', () => {
                     localActions: {
                         createOrder: {
                             fn: () => () => {},
-                        }
+                        },
                     },
                     start({singletons: {subscriber}, localActions: {createOrder}}) {
                         subscriber.on('create-order', createOrder);

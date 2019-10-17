@@ -15,6 +15,10 @@ exports.DEFAULT_SINGLETON_TEMPLATE_REMOVE = /\.singleton.js$/i;
 exports.DEFAULT_SERVICE_TEMPLATE = '*/index.js';
 exports.DEFAULT_SERVICE_TEMPLATE_REMOVE = new RegExp(`${SEPARATOR}index.js$`, 'i');
 
+exports.SERVICE_CREATED = 'created';
+exports.SERVICE_LOADED = 'loaded';
+exports.SERVICE_RUNNING = 'running';
+exports.SERVICE_STOPPED = 'stopped';
 
 exports.isStringArray = value => {
     if (!Array.isArray(value))

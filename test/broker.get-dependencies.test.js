@@ -29,6 +29,52 @@ describe('Broker#getDependencies()', () => {
     });
 
 
+    it('should return only service with singleton, action and plugin', () => {
+        const broker = Broker({
+            singletons: {
+                singleton1: {start() {}},
+            },
+            actions: {
+                action1: {
+                    singletons: ['singleton1'],
+                    fn: () => () => {},
+                },
+            },
+            services: {
+                first: {
+                    singletons: ['singleton1'],
+                    actions: ['action1'],
+                    start() {},
+                },
+            },
+        });
+
+        expect(broker.getDependencies()).toEqual({
+            services: {
+                first: {
+                    singletons: ['singleton1'],
+                    actions: ['action1'],
+                    localActions: [],
+                    plugins: [],
+                },
+            },
+            actions: {
+                action1: {
+                    singletons: ['singleton1'],
+                    actions: [],
+                    plugins: [],
+                },
+            },
+            singletons: {
+                singleton1: {
+                    singletons: [],
+                },
+            },
+            plugins: {},
+        });
+    });
+
+
     it.skip('should return complex dependency tree', async() => {
         const broker = Broker({
             singletons: {

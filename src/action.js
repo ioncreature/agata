@@ -1,7 +1,7 @@
 'use strict';
 
 const
-    {isFunction, isObject} = require('lodash'),
+    {isFunction, isObject, cloneDeep} = require('lodash'),
     {isStringArray} = require('./utils');
 
 
@@ -58,6 +58,11 @@ class Action {
 
     getPluginParams(name) {
         return this.plugins[name] && {...this.plugins[name]};
+    }
+
+
+    getAllPluginParams() {
+        return cloneDeep(this.plugins);
     }
 }
 

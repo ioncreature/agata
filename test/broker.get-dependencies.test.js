@@ -41,7 +41,7 @@ describe('Broker#getDependencies()', () => {
                 },
             },
             services: {
-                first: {
+                service1: {
                     singletons: ['singleton1'],
                     actions: ['action1'],
                     start() {},
@@ -51,7 +51,7 @@ describe('Broker#getDependencies()', () => {
 
         expect(broker.getDependencies()).toEqual({
             services: {
-                first: {
+                service1: {
                     singletons: ['singleton1'],
                     actions: ['action1'],
                     localActions: [],
@@ -60,14 +60,28 @@ describe('Broker#getDependencies()', () => {
             },
             actions: {
                 action1: {
-                    singletons: ['singleton1'],
-                    actions: [],
-                    plugins: [],
+                    dependencies: {
+                        singletons: ['singleton1'],
+                        actions: [],
+                        plugins: {},
+                    },
+                    dependents: {
+                        actions: [],
+                        services: ['service1'],
+                    },
                 },
             },
             singletons: {
                 singleton1: {
-                    singletons: [],
+                    dependencies: {
+                        singletons: [],
+                    },
+                    dependents: {
+                        actions: ['action1'],
+                        singletons: [],
+                        plugins: [],
+                        services: ['service1'],
+                    },
                 },
             },
             plugins: {},
@@ -75,7 +89,7 @@ describe('Broker#getDependencies()', () => {
     });
 
 
-    it.skip('should return complex dependency tree', async() => {
+    it('should return complex dependency tree', async() => {
         const broker = Broker({
             singletons: {
                 config: {
@@ -85,11 +99,11 @@ describe('Broker#getDependencies()', () => {
                     singletons: ['config'],
                     start() {},
                 },
-                subscribe: {
+                subscriber: {
                     singletons: ['redis'],
                     start() {},
                 },
-                publish: {
+                publisher: {
                     singletons: ['redis'],
                     start() {},
                 },
@@ -149,7 +163,7 @@ describe('Broker#getDependencies()', () => {
                     stop() {},
                 },
                 telegramBot: {
-                    singletons: ['postgres', 'publish', 'pubsub'],
+                    singletons: ['postgres', 'publisher'],
                     localActions: {
                         verify: {
                             actions: ['users.getById'],

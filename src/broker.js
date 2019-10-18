@@ -135,7 +135,7 @@ class Broker {
 
         Object.entries(this.services).forEach(([name, srv]) => {
             Object.entries(srv.localActions).forEach(([actionName, action]) => {
-                this.actions[`${name}#${actionName}`] = action;
+                this.actions[localActionName(name, actionName)] = action;
             });
         });
 
@@ -248,7 +248,7 @@ class Broker {
             return;
 
         service.dependencies.singletons = this.sortSingletons(service.getRequiredSingletons());
-        service.dependencies.localActions = service.getRequiredLocalActions().map(a => `${name}#${a}`);
+        service.dependencies.localActions = service.getRequiredLocalActions().map(a => localActionName(name, a));
         service.dependencies.actions = this.sortActions(
             [...service.getRequiredActions(), ...service.dependencies.localActions],
             service.dependencies.singletons,
@@ -414,7 +414,7 @@ class Broker {
 
         function getDependencies(name, dependedBy = []) {
             allActions.add(name);
-
+console.log('-----', requiredActions, name);
             actions[name].getRequiredActions().forEach(n => {
                 if (dependedBy.includes(name))
                     throw new Error(`Found actions circular dependency: ${[...dependedBy, name, n].join(' -> ')}`);
@@ -431,7 +431,7 @@ class Broker {
         for (const name of names) {
             const action = this.actions[name];
 
-            action.initializedFn = await this.initAction(name); // todo: solve race condition here
+            action.initializedFn = await this.initAction(name); // todo: race condition here :(
 
             const realName = name.includes('#') ? name.split('#')[1] : name;
             set(result, realName, action.initializedFn);
@@ -542,9 +542,71 @@ class Broker {
             };
         });
 
+        Object.entries(this.singletons).forEach(([name, singleton]) => {
+            result.singletons[name] = {
+                dependencies: {
+                    singletons: singleton.getRequiredSingletons(),
+                },
+                dependents: {
+                    actions: [],
+                    singletons: [],
+                    plugins: [],
+                    services: [],
+                },
+            };
+        });
+
+        Object.entries(this.actions).forEach(([name, action]) => {
+            result.actions[name] = {
+                dependencies: {
+                    singletons: action.getRequiredSingletons(),
+                    actions: action.getRequiredActions(),
+                    plugins: action.getAllPluginParams(),
+                },
+                dependents: {
+                    actions: [],
+                    services: [],
+                },
+            };
+        });
+
+        Object.entries(this.plugins).forEach(([name, plugin]) => {
+            result.plugins[name] = {
+                dependencies: {
+                    singletons: plugin.getRequiredSingletons(),
+                },
+                dependents: {
+                    actions: [],
+                },
+            };
+        });
+
+        // collect dependents
+        Object.entries(this.services).forEach(([name, service]) => {
+            service.getRequiredSingletons().forEach(s => result.singletons[s].dependents.services.push(name));
+            service.getRequiredActions().forEach(a => result.actions[a].dependents.services.push(name));
+            service.getRequiredLocalActions().forEach(a => result.actions[a].dependents.services.push(name));
+        });
+        Object.entries(this.singletons).forEach(([name, singleton]) => {
+            singleton.getRequiredSingletons().forEach(s => result.singletons[s].dependents.singletons.push(name));
+        });
+        Object.entries(this.plugins).forEach(([name, plugin]) => {
+            plugin.getRequiredSingletons().forEach(s => result.singletons[s].dependents.plugins.push(name));
+        });
+        Object.entries(this.actions).forEach(([name, action]) => {
+            action.getRequiredActions().forEach(a => result.actions[a].dependents.actions.push(name));
+            action.getRequiredSingletons().forEach(s => result.singletons[s].dependents.actions.push(name));
+            action.getRequiredPlugins().forEach(p => result.plugins[p].dependents.actions.push(name));
+        });
+
         return result;
     }
 }
 
 
 module.exports = Broker;
+
+
+function localActionName(service, action) {
+    return `${service}#${action}`;
+}

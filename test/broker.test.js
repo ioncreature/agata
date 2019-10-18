@@ -47,7 +47,7 @@ describe('Broker Constructor', () => {
                 actions: {
                     test: {
                         fn() {},
-                        plugins: {test: 1},
+                        plugins: {xyz2: 1},
                         singletons: ['test1', 'test2'],
                         actions: ['test3'],
                     },

@@ -30,6 +30,7 @@ class Singleton {
         this.singletons = singletons || [];
         this.start = start;
         this.stop = stop;
+        this.stateData = {};
     }
 
 

@@ -19,6 +19,10 @@ const
         DEFAULT_ACTION_TEMPLATE_REMOVE,
         DEFAULT_SINGLETON_TEMPLATE,
         DEFAULT_SINGLETON_TEMPLATE_REMOVE,
+        SERVICE_CREATED,
+        SERVICE_LOADED,
+        SERVICE_RUNNING,
+        SERVICE_STOPPED,
     } = require('./utils'),
     Service = require('./service'),
     Singleton = require('./singleton'),
@@ -58,11 +62,8 @@ class Broker {
 
         this.servicesPath = servicesPath;
         this.singletonsPath = singletonsPath;
-        this.singletonsTemplate = singletonsPath;
         this.actionsPath = actionsPath;
-        this.actionsTemplate = actionsPath;
         this.pluginsPath = pluginsPath;
-        this.pluginsTemplate = pluginsPath;
 
         if (singletons) {
             if (!isObject(singletons))
@@ -112,7 +113,6 @@ class Broker {
                 .entries(services)
                 .reduce((res, [name, s]) => {
                     res[name] = s instanceof Service ? s : new Service(s);
-
                     return res;
                 }, {});
         }
@@ -135,7 +135,7 @@ class Broker {
 
         Object.entries(this.services).forEach(([name, srv]) => {
             Object.entries(srv.localActions).forEach(([actionName, action]) => {
-                this.actions[`${name}#${actionName}`] = action;
+                this.actions[localActionName(name, actionName)] = action;
             });
         });
 
@@ -175,6 +175,7 @@ class Broker {
         // if (this.pluginsPath) {}
 
         Object.entries(this.services).forEach(([name, srv]) => {
+            srv.state = SERVICE_CREATED;
             srv.getRequiredSingletons().forEach(singleton => {
                 if (!this.singletons[singleton])
                     throw new Error(`Service "${name}" requires unknown singleton "${singleton}"`);
@@ -197,6 +198,16 @@ class Broker {
             action.getRequiredSingletons().forEach(s => {
                 if (!this.singletons[s])
                     throw new Error(`Action "${name}" requires unknown singleton "${s}"`);
+            });
+
+            action.getRequiredActions().forEach(a => {
+                if (!this.actions[a])
+                    throw new Error(`Action "${name}" requires unknown action "${a}"`);
+            });
+
+            action.getRequiredPlugins().forEach(p => {
+                if (!this.plugins[p])
+                    throw new Error(`Action "${name}" tries to configure unknown plugin "${p}"`);
             });
         });
 
@@ -221,11 +232,37 @@ class Broker {
         if (this.isServiceRunning(name))
             return;
 
-        const localActionsNames = service.getRequiredLocalActions().map(a => `${name}#${a}`);
+        this.loadService(name);
+
+        const
+            singletons = await this.startSingletons(service.dependencies.singletons),
+            plugins = await this.startPlugins(service.dependencies.plugins),
+            actions = await this.startActions(service.dependencies.actions),
+            localActions = await this.startActions(service.dependencies.localActions);
+
+        await service.startHandler({
+            singletons: pick(singletons, service.getRequiredSingletons()),
+            actions: pick(actions, service.getRequiredActions()),
+            plugins,
+            localActions,
+            state: service.stateData,
+        });
+
+        service.state = SERVICE_RUNNING;
+    }
+
+
+    loadService(name) {
+        const service = this.getServiceByName(name);
+
+        if (this.isServiceLoaded(name))
+            return;
 
         service.dependencies.singletons = this.sortSingletons(service.getRequiredSingletons());
+        service.dependencies.localActions = service.getRequiredLocalActions().map(a => localActionName(name, a));
         service.dependencies.actions = this.sortActions(
-            [...service.getRequiredActions(), ...localActionsNames],
+            name,
+            [...service.getRequiredActions(), ...service.dependencies.localActions],
             service.dependencies.singletons,
         );
         service.dependencies.plugins = this.getServicePlugins(
@@ -233,20 +270,7 @@ class Broker {
             service.dependencies.singletons,
         );
 
-        const
-            singletons = await this.startSingletons(service.dependencies.singletons),
-            plugins = await this.startPlugins(service.dependencies.plugins),
-            actions = await this.startActions(service.dependencies.actions),
-            localActions = await this.startActions(localActionsNames);
-
-        await service.startHandler({
-            singletons: pick(singletons, service.getRequiredSingletons()),
-            actions: pick(actions, service.getRequiredActions()),
-            plugins,
-            localActions,
-        });
-
-        service.isRunning = true;
+        service.state = SERVICE_LOADED;
     }
 
 
@@ -256,7 +280,7 @@ class Broker {
 
         const service = this.getServiceByName(name);
         if (service.stopHandler)
-            await service.stopHandler();
+            await service.stopHandler({state: service.stateData});
 
         const runningServices = this.getRunningServices().filter(n => n !== name);
 
@@ -270,11 +294,11 @@ class Broker {
         for (const singleton of singletonsToStop) {
             const s = this.singletons[singleton];
             if (s.stop)
-                await s.stop();
+                await s.stop({state: s.stateData});
             s.started = false;
         }
 
-        service.isRunning = false;
+        service.state = SERVICE_STOPPED;
     }
 
 
@@ -300,7 +324,12 @@ class Broker {
      * @returns {boolean}
      */
     isServiceRunning(name) {
-        return !!this.getServiceByName(name).isRunning;
+        return this.getServiceByName(name).state === SERVICE_RUNNING;
+    }
+
+
+    isServiceLoaded(name) {
+        return this.getServiceByName(name).state !== SERVICE_CREATED;
     }
 
 
@@ -359,7 +388,7 @@ class Broker {
                     return res;
                 }, {});
                 singleton.started = true;
-                singleton.instance = await singleton.start({singletons});
+                singleton.instance = await singleton.start({singletons, state: singleton.stateData});
             }
 
             result[name] = singleton.instance;
@@ -369,7 +398,7 @@ class Broker {
     }
 
 
-    sortActions(requiredActions, singletons) {
+    sortActions(serviceName, requiredActions, singletons) {
         const
             actions = this.actions,
             allActions = new Set(requiredActions),
@@ -384,8 +413,8 @@ class Broker {
             const notIncluded = difference(action.getRequiredSingletons(), singletons);
             if (notIncluded.length)
                 throw new Error(
-                    `Action "${name}" requires not included singleton(s): "${notIncluded.join('", "')}". ` +
-                    'Please add them to service definition',
+                    `Action "${name}" in service "${serviceName}" requires not included singleton(s): ` +
+                    `"${notIncluded.join('", "')}". Please add them to service definition`,
                 );
 
             action.getRequiredActions().forEach(a => graph.push([name, a]));
@@ -400,7 +429,10 @@ class Broker {
 
             actions[name].getRequiredActions().forEach(n => {
                 if (dependedBy.includes(name))
-                    throw new Error(`Found actions circular dependency: ${[...dependedBy, name, n].join(' -> ')}`);
+                    throw new Error(
+                        `Found actions circular dependency in service ${serviceName}: ` +
+                        `${[...dependedBy, name, n].join(' -> ')}`
+                    );
 
                 getDependencies(n, [...dependedBy, name]);
             });
@@ -414,7 +446,7 @@ class Broker {
         for (const name of names) {
             const action = this.actions[name];
 
-            action.initializedFn = await this.initAction(name); // todo: solve race condition here
+            action.initializedFn = await this.initAction(name); // todo: race condition here :(
 
             const realName = name.includes('#') ? name.split('#')[1] : name;
             set(result, realName, action.initializedFn);
@@ -485,7 +517,6 @@ class Broker {
             action.getRequiredPlugins().forEach(pluginName => {
                 if (!plugins.includes(pluginName))
                     plugins.push(pluginName);
-
             });
         });
 
@@ -503,7 +534,95 @@ class Broker {
         return plugins;
     }
 
+
+    getDependencies() {
+        const result = {
+            services: {},
+            singletons: {},
+            actions: {},
+            plugins: {},
+        };
+
+        const services = Object.keys(this.services);
+        services.forEach(name => this.loadService(name));
+
+        services.forEach(name => {
+            const service = this.services[name];
+            result.services[name] = {
+                singletons: [...service.dependencies.singletons],
+                actions: [...service.dependencies.actions],
+                localActions: [...service.dependencies.localActions],
+                plugins: [...service.dependencies.plugins],
+            };
+        });
+
+        Object.entries(this.singletons).forEach(([name, singleton]) => {
+            result.singletons[name] = {
+                dependencies: {
+                    singletons: singleton.getRequiredSingletons(),
+                },
+                dependents: {
+                    actions: [],
+                    singletons: [],
+                    plugins: [],
+                    services: [],
+                },
+            };
+        });
+
+        Object.entries(this.actions).forEach(([name, action]) => {
+            result.actions[name] = {
+                dependencies: {
+                    singletons: action.getRequiredSingletons(),
+                    actions: action.getRequiredActions(),
+                    plugins: action.getAllPluginParams(),
+                },
+                dependents: {
+                    actions: [],
+                    services: [],
+                },
+            };
+        });
+
+        Object.entries(this.plugins).forEach(([name, plugin]) => {
+            result.plugins[name] = {
+                dependencies: {
+                    singletons: plugin.getRequiredSingletons(),
+                },
+                dependents: {
+                    actions: [],
+                },
+            };
+        });
+
+        // collect dependents
+        Object.entries(this.services).forEach(([name, service]) => {
+            service.getRequiredSingletons().forEach(s => result.singletons[s].dependents.services.push(name));
+            service.getRequiredActions().forEach(a => result.actions[a].dependents.services.push(name));
+            service
+                .getRequiredLocalActions()
+                .forEach(a => result.actions[localActionName(name, a)].dependents.services.push(name));
+        });
+        Object.entries(this.singletons).forEach(([name, singleton]) => {
+            singleton.getRequiredSingletons().forEach(s => result.singletons[s].dependents.singletons.push(name));
+        });
+        Object.entries(this.plugins).forEach(([name, plugin]) => {
+            plugin.getRequiredSingletons().forEach(s => result.singletons[s].dependents.plugins.push(name));
+        });
+        Object.entries(this.actions).forEach(([name, action]) => {
+            action.getRequiredActions().forEach(a => result.actions[a].dependents.actions.push(name));
+            action.getRequiredSingletons().forEach(s => result.singletons[s].dependents.actions.push(name));
+            action.getRequiredPlugins().forEach(p => result.plugins[p].dependents.actions.push(name));
+        });
+
+        return result;
+    }
 }
 
 
 module.exports = Broker;
+
+
+function localActionName(service, action) {
+    return `${service}#${action}`;
+}

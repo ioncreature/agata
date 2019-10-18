@@ -199,6 +199,16 @@ class Broker {
                 if (!this.singletons[s])
                     throw new Error(`Action "${name}" requires unknown singleton "${s}"`);
             });
+
+            action.getRequiredActions().forEach(a => {
+                if (!this.actions[a])
+                    throw new Error(`Action "${name}" requires unknown action "${a}"`);
+            });
+
+            action.getRequiredPlugins().forEach(p => {
+                if (!this.plugins[p])
+                    throw new Error(`Action "${name}" tries to configure unknown plugin "${p}"`);
+            });
         });
 
 
@@ -250,6 +260,7 @@ class Broker {
         service.dependencies.singletons = this.sortSingletons(service.getRequiredSingletons());
         service.dependencies.localActions = service.getRequiredLocalActions().map(a => localActionName(name, a));
         service.dependencies.actions = this.sortActions(
+            name,
             [...service.getRequiredActions(), ...service.dependencies.localActions],
             service.dependencies.singletons,
         );
@@ -386,7 +397,7 @@ class Broker {
     }
 
 
-    sortActions(requiredActions, singletons) {
+    sortActions(serviceName, requiredActions, singletons) {
         const
             actions = this.actions,
             allActions = new Set(requiredActions),
@@ -401,8 +412,8 @@ class Broker {
             const notIncluded = difference(action.getRequiredSingletons(), singletons);
             if (notIncluded.length)
                 throw new Error(
-                    `Action "${name}" requires not included singleton(s): "${notIncluded.join('", "')}". ` +
-                    'Please add them to service definition',
+                    `Action "${name}" in service "${serviceName}" requires not included singleton(s): ` +
+                    `"${notIncluded.join('", "')}". Please add them to service definition`,
                 );
 
             action.getRequiredActions().forEach(a => graph.push([name, a]));
@@ -414,10 +425,13 @@ class Broker {
 
         function getDependencies(name, dependedBy = []) {
             allActions.add(name);
-console.log('-----', requiredActions, name);
+
             actions[name].getRequiredActions().forEach(n => {
                 if (dependedBy.includes(name))
-                    throw new Error(`Found actions circular dependency: ${[...dependedBy, name, n].join(' -> ')}`);
+                    throw new Error(
+                        `Found actions circular dependency in service ${serviceName}: ` +
+                        `${[...dependedBy, name, n].join(' -> ')}`
+                    );
 
                 getDependencies(n, [...dependedBy, name]);
             });
@@ -502,7 +516,6 @@ console.log('-----', requiredActions, name);
             action.getRequiredPlugins().forEach(pluginName => {
                 if (!plugins.includes(pluginName))
                     plugins.push(pluginName);
-
             });
         });
 
@@ -537,8 +550,8 @@ console.log('-----', requiredActions, name);
             result.services[name] = {
                 singletons: [...service.dependencies.singletons],
                 actions: [...service.dependencies.actions],
-                localActions: Object.keys(service.dependencies.localActions || {}),
-                plugins: Object.keys(service.dependencies.plugins || {}),
+                localActions: [...service.dependencies.localActions],
+                plugins: [...service.dependencies.plugins],
             };
         });
 
@@ -585,7 +598,9 @@ console.log('-----', requiredActions, name);
         Object.entries(this.services).forEach(([name, service]) => {
             service.getRequiredSingletons().forEach(s => result.singletons[s].dependents.services.push(name));
             service.getRequiredActions().forEach(a => result.actions[a].dependents.services.push(name));
-            service.getRequiredLocalActions().forEach(a => result.actions[a].dependents.services.push(name));
+            service
+                .getRequiredLocalActions()
+                .forEach(a => result.actions[localActionName(name, a)].dependents.services.push(name));
         });
         Object.entries(this.singletons).forEach(([name, singleton]) => {
             singleton.getRequiredSingletons().forEach(s => result.singletons[s].dependents.singletons.push(name));

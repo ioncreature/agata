@@ -6,8 +6,8 @@ const
 
 describe('Service local actions', () => {
 
-    it('should throw if local actions requires unknown action', async() => {
-        const broker = Broker({
+    it('should throw if local actions requires unknown action', () => {
+        expect(() => Broker({
             services: {
                 first: {
                     localActions: {
@@ -21,9 +21,7 @@ describe('Service local actions', () => {
                     start() {},
                 },
             },
-        });
-
-        await expect(broker.startService('first')).rejects.toThrow();
+        })).toThrow(/requires unknown action/);
     });
 
 

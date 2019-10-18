@@ -92,19 +92,7 @@ describe('Broker#getDependencies()', () => {
     it('should return complex dependency tree', async() => {
         const broker = Broker({
             singletons: {
-                config: {
-                    start() {},
-                },
                 redis: {
-                    singletons: ['config'],
-                    start() {},
-                },
-                subscriber: {
-                    singletons: ['redis'],
-                    start() {},
-                },
-                publisher: {
-                    singletons: ['redis'],
                     start() {},
                 },
                 cache: {
@@ -112,74 +100,76 @@ describe('Broker#getDependencies()', () => {
                     start() {},
                 },
                 postgres: {
-                    singletons: ['config', 'cache'],
+                    singletons: ['cache'],
                     start() {},
                 },
             },
+            plugins: {
+                publisher: { // let's suppose that we are implementing communication between services with redis pubsub
+                    singletons: ['redis'],
+                    start() {
+                        return () => {};
+                    },
+                },
+                subscriber: {
+                    singletons: ['redis'],
+                    start() {
+                        return () => {};
+                    },
+                },
+            },
             actions: {
-                'users.getById': {
-                    singletons: ['postgres'],
+                'some.doA': {
+                    singletons: ['cache'],
                     fn: () => () => {},
                 },
-                'goods.getById': {
-                    singletons: ['postgres'],
+                'some.doB': {
+                    actions: ['some.doA'],
                     fn: () => () => {},
                 },
-                'goods.getByCategory': {
+                'some.doC': {
                     singletons: ['postgres'],
+                    plugins: {
+                        subscriber: {channel: 'createC'},
+                    },
+                    actions: ['some.doB'],
                     fn: () => () => {},
                 },
-                'goods.getCategories': {
-                    singletons: ['postgres'],
-                    fn: () => () => {},
-                },
-                'order.create': {
-                    singletons: ['postgres'],
+                noop: {
                     fn: () => () => {},
                 },
             },
             services: {
-                auth: {
+                serviceA: {
                     singletons: ['postgres'],
+                    actions: ['some.doC'],
                     localActions: {
-                        authorizeUser: {
-                            singletons: ['postgres'],
-                            actions: ['user.getById'],
+                        localActionA: {
+                            singletons: ['cache'],
+                            actions: ['noop'],
+                            plugins: {
+                                subscriber: {channel: 'createC'},
+                            },
                             fn: () => () => {},
                         },
                     },
                     start() {},
-                },
-                catalog: {
-                    singletons: ['postgres', 'subscriber', 'cache'],
-                    localActions: {
-                        createOrder: {
-                            fn: () => () => {},
-                        },
-                    },
-                    start({singletons: {subscriber}, localActions: {createOrder}}) {
-                        subscriber.on('create-order', createOrder);
-                    },
                     stop() {},
                 },
-                telegramBot: {
-                    singletons: ['postgres', 'publisher'],
+                serviceB: {
+                    singletons: ['postgres', 'redis'],
                     localActions: {
-                        verify: {
-                            actions: ['users.getById'],
+                        localActionB: {
+                            plugins: {
+                                subscriber: {channel: 'createC'},
+                            },
                             fn: () => () => {},
                         },
-                        createOrder: {
+                        localActionC: {
+                            actions: ['some.doC'],
                             plugins: {
-                                publisher: {
-                                    channel: 'create-order',
-                                    params: {
-                                        userId: 'string',
-                                        goods: ['string'],
-                                    },
-                                },
+                                publisher: {channel: 'createC'},
                             },
-                            actions: ['users.getById'],
                             fn: () => () => {},
                         },
                     },
@@ -188,8 +178,65 @@ describe('Broker#getDependencies()', () => {
             },
         });
 
-        expect(broker.getDependencies()).toEqual({
+        const deps = broker.getDependencies();
+        expect(deps.services.serviceB).toEqual({
+            singletons: ['redis', 'cache', 'postgres'],
+            plugins: ['subscriber', 'publisher'],
+            actions: [
+                'some.doA',
+                'some.doB',
+                'some.doC',
+                'serviceB#localActionC',
+                'serviceB#localActionB',
+            ],
+            localActions: ['serviceB#localActionB', 'serviceB#localActionC'],
+        });
 
+        expect(deps.plugins.subscriber).toEqual({
+            dependencies: {
+                singletons: ['redis'],
+            },
+            dependents: {
+                actions: ['some.doC', 'serviceA#localActionA', 'serviceB#localActionB'],
+            },
+        });
+
+        expect(deps.singletons.redis).toEqual({
+            dependencies: {
+                singletons: [],
+            },
+            dependents: {
+                actions: [],
+                plugins: ['publisher', 'subscriber'],
+                services: ['serviceB'],
+                singletons: ['cache'],
+            },
+        });
+
+        expect(deps.actions['some.doC']).toEqual({
+            dependencies: {
+                actions: ['some.doB'],
+                singletons: ['postgres'],
+                plugins: {
+                    subscriber: {channel: 'createC'},
+                },
+            },
+            dependents: {
+                actions: ['serviceB#localActionC'],
+                services: ['serviceA'],
+            },
+        });
+
+        expect(deps.actions.noop).toEqual({
+            dependencies: {
+                actions: [],
+                singletons: [],
+                plugins: {},
+            },
+            dependents: {
+                actions: ['serviceA#localActionA'],
+                services: [],
+            },
         });
     });
 

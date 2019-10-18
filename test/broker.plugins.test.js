@@ -34,6 +34,26 @@ describe('Plugins for actions', () => {
     });
 
 
+    it('should throw if actions required unknown plugin', async() => {
+        expect(() => Broker({
+            actions: {
+                a1: {
+                    plugins: {
+                        p1: {ok: 1},
+                    },
+                    fn() {},
+                },
+            },
+            services: {
+                first: {
+                    actions: ['a1'],
+                    start() {},
+                },
+            },
+        })).toThrow(/tries to configure unknown plugin/);
+    });
+
+
     it('should throw if plugin requires not included singleton', async() => {
         const broker = Broker({
             singletons: {

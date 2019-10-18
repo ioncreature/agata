@@ -32,9 +32,9 @@ const broker = Broker({
             stop({state}) {
                 clearInterval(state.interval);
                 console.log('Bye!');
-             },
+            },
         },
-    }
+    },
 });
 
 broker.startService('serviceOne');

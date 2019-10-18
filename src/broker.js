@@ -245,6 +245,7 @@ class Broker {
             actions: pick(actions, service.getRequiredActions()),
             plugins,
             localActions,
+            state: service.stateData,
         });
 
         service.state = SERVICE_RUNNING;
@@ -279,7 +280,7 @@ class Broker {
 
         const service = this.getServiceByName(name);
         if (service.stopHandler)
-            await service.stopHandler();
+            await service.stopHandler({state: service.stateData});
 
         const runningServices = this.getRunningServices().filter(n => n !== name);
 
@@ -293,7 +294,7 @@ class Broker {
         for (const singleton of singletonsToStop) {
             const s = this.singletons[singleton];
             if (s.stop)
-                await s.stop();
+                await s.stop({state: s.stateData});
             s.started = false;
         }
 
@@ -387,7 +388,7 @@ class Broker {
                     return res;
                 }, {});
                 singleton.started = true;
-                singleton.instance = await singleton.start({singletons});
+                singleton.instance = await singleton.start({singletons, state: singleton.stateData});
             }
 
             result[name] = singleton.instance;

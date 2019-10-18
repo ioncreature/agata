@@ -74,6 +74,7 @@ class Service {
         this.localActions = {};
         this.startHandler = start;
         this.stopHandler = stop;
+        this.stateData = {};
 
         if (localActions)
             Object.entries(localActions).forEach(([name, action]) => {

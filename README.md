@@ -18,6 +18,30 @@ Unit tests seems redundant in microservices, their place inside libraries.
 It is better to test business units(actions), contracts(handlers) and user scenarios.
 
 
+## Example: Service without dependencies
+```javascript
+const {Broker} = require('agata');
+
+const broker = Broker({
+    services: {
+        serviceOne: {
+            start({state}) {
+                console.log('Service started');
+                state.interval = setInterval(() => console.log('Hello!'), 1000);
+            },
+            stop({state}) {
+                clearInterval(state.interval);
+                console.log('Bye!');
+             },
+        },
+    }
+});
+
+broker.startService('serviceOne');
+setTimeout(() => broker.stopService('serviceOne'), 5000);
+```
+
+
 ## Lifecycle
 
 - Load 

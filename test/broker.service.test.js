@@ -4,7 +4,91 @@ const
     {Broker} = require('../index');
 
 
-describe('Stop service', () => {
+describe('Services start and stop', () => {
+
+    test('Start simple service', async() => {
+        let started = false;
+        const broker = Broker({
+            services: {
+                first: {
+                    start() {
+                        started = true;
+                    },
+                },
+            },
+        });
+
+        await broker.startService('first');
+        expect(started).toBe(true);
+        expect(broker.isServiceRunning('first')).toBe(true);
+    });
+
+
+    test('Start service once', async() => {
+        let started = 0;
+        const broker = Broker({
+            services: {
+                first: {
+                    start() {
+                        started++;
+                    },
+                },
+            },
+        });
+
+        await broker.startService('first');
+        expect(started).toBe(1);
+        expect(broker.isServiceRunning('first')).toBe(true);
+        await broker.startService('first');
+        expect(started).toBe(1);
+    });
+
+
+    test('Service state is passed to start and stop', async() => {
+        const broker = Broker({
+            services: {
+                first: {
+                    start({state}) {
+                        expect(state).toEqual({});
+                        state.hello = 'world';
+                    },
+                    stop({state}) {
+                        expect(state).toEqual({hello: 'world'});
+                    },
+                },
+            },
+        });
+
+        await broker.startService('first');
+        await broker.stopService('first');
+    });
+
+
+    test('Singleton state is passed to start and stop', async() => {
+        const broker = Broker({
+            singletons: {
+                s1: {
+                    start({state}) {
+                        expect(state).toEqual({});
+                        state.hello = 's1';
+                    },
+                    stop({state}) {
+                        expect(state).toEqual({hello: 's1'});
+                    },
+                },
+            },
+            services: {
+                first: {
+                    singletons: ['s1'],
+                    start() {},
+                },
+            },
+        });
+
+        await broker.startService('first');
+        await broker.stopService('first');
+    });
+
 
     it('should stop service with no singletons', async() => {
         let i = 0;

@@ -3,45 +3,8 @@
 const
     {Broker} = require('../index');
 
+
 describe('Service singletons', () => {
-
-    test('Start simple service', async() => {
-        let started = false;
-        const broker = Broker({
-            services: {
-                first: {
-                    start() {
-                        started = true;
-                    },
-                },
-            },
-        });
-
-        await broker.startService('first');
-        expect(started).toBe(true);
-        expect(broker.isServiceRunning('first')).toBe(true);
-    });
-
-
-    test('Start service once', async() => {
-        let started = 0;
-        const broker = Broker({
-            services: {
-                first: {
-                    start() {
-                        started++;
-                    },
-                },
-            },
-        });
-
-        await broker.startService('first');
-        expect(started).toBe(1);
-        expect(broker.isServiceRunning('first')).toBe(true);
-        await broker.startService('first');
-        expect(started).toBe(1);
-    });
-
 
     test('Broker throws if service depends on unknown singleton', () => {
         expect(() => Broker({
@@ -162,7 +125,7 @@ describe('Service singletons', () => {
             },
         });
 
-        expect(broker.startService('first')).rejects.toThrow();
+        expect(broker.startService('first')).rejects.toThrow(/singletons circular dependency/);
     });
 
 
@@ -222,4 +185,5 @@ describe('Service singletons', () => {
 
         await broker.startService('first');
     });
+
 });

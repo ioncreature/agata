@@ -118,3 +118,54 @@ describe('Load singletons from file system', () => {
 
 });
 
+
+describe('Load plugins from file system', () => {
+
+    it.each([
+        ['test/plugins'],
+        [join(__dirname, 'plugins')],
+    ])(
+        'should load actions with plugins from FS, path: %s',
+        async path => {
+            const broker = Broker({
+                actionsPath: path,
+                pluginsPath: path,
+                services: {
+                    first: {
+                        actions: ['some'],
+                        start({actions: {some}}) {
+                            expect(some(11)).toEqual({
+                                seven: 7,
+                                param: 11,
+                                proxy: {this: 'is object'},
+                            });
+                        },
+                    },
+                },
+            });
+
+            await broker.startService('first');
+        },
+    );
+
+
+    it('should throw if plugins names match', async() => {
+        expect(() => Broker({
+            actionsPath: 'test/plugins',
+            pluginsPath: 'test/plugins',
+            plugins: {
+                seven: {
+                    start() {
+                        return () => 7;
+                    },
+                },
+            },
+            actions: {
+                getOne: {
+                    fn() {},
+                },
+            },
+        })).toThrow(/already exists/);
+    });
+
+});

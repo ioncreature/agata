@@ -19,6 +19,8 @@ const
         DEFAULT_ACTION_TEMPLATE_REMOVE,
         DEFAULT_SINGLETON_TEMPLATE,
         DEFAULT_SINGLETON_TEMPLATE_REMOVE,
+        DEFAULT_PLUGIN_TEMPLATE,
+        DEFAULT_PLUGIN_TEMPLATE_REMOVE,
         SERVICE_CREATED,
         SERVICE_LOADED,
         SERVICE_RUNNING,
@@ -139,22 +141,6 @@ class Broker {
             });
         });
 
-        // load actions from fs
-        if (this.actionsPath) {
-            const files = loadFiles({
-                path: this.actionsPath,
-                template: DEFAULT_ACTION_TEMPLATE,
-                remove: DEFAULT_ACTION_TEMPLATE_REMOVE,
-            });
-
-            files.forEach(([name, file]) => {
-                if (this.actions[name])
-                    throw new Error(`Action with name "${name}" already exists`);
-
-                this.actions[name] = file instanceof Action ? file : new Action(file);
-            });
-        }
-
         // load singletons from fs
         if (this.singletonsPath) {
             const files = loadFiles({
@@ -172,7 +158,36 @@ class Broker {
         }
 
         // load plugins from fs
-        // if (this.pluginsPath) {}
+        if (this.pluginsPath) {
+            const files = loadFiles({
+                path: this.pluginsPath,
+                template: DEFAULT_PLUGIN_TEMPLATE,
+                remove: DEFAULT_PLUGIN_TEMPLATE_REMOVE,
+            });
+
+            files.forEach(([name, file]) => {
+                if (this.plugins[name])
+                    throw new Error(`Plugin with name "${name}" already exists`);
+
+                this.plugins[name] = file instanceof Plugin ? file : new Plugin(file);
+            });
+        }
+
+        // load actions from fs
+        if (this.actionsPath) {
+            const files = loadFiles({
+                path: this.actionsPath,
+                template: DEFAULT_ACTION_TEMPLATE,
+                remove: DEFAULT_ACTION_TEMPLATE_REMOVE,
+            });
+
+            files.forEach(([name, file]) => {
+                if (this.actions[name])
+                    throw new Error(`Action with name "${name}" already exists`);
+
+                this.actions[name] = file instanceof Action ? file : new Action(file);
+            });
+        }
 
         Object.entries(this.services).forEach(([name, srv]) => {
             srv.state = SERVICE_CREATED;

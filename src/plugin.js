@@ -11,7 +11,7 @@ class Plugin {
             throw new Error('Plugin parameter "start" have to be a function');
 
         if (singletons && !isStringArray(singletons))
-            throw new Error('Parameter "singletons" have to be an array of strings');
+            throw new Error('Plugin parameter "singletons" have to be an array of strings');
     }
 
 

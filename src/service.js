@@ -19,25 +19,25 @@ class Service {
 
     static validateConfig({start, stop, singletons, actions, localActions}) {
         if (!isFunction(start))
-            throw new Error('Parameter "start" have to be a function');
+            throw new Error('Service parameter "start" have to be a function');
 
         if (stop && !isFunction(stop))
-            throw new Error('Parameter "stop" have to be a function');
+            throw new Error('Service parameter "stop" have to be a function');
 
         if (singletons && !isStringArray(singletons))
-            throw new Error('Parameter "singletons" have to be an array of strings');
+            throw new Error('Service parameter "singletons" have to be an array of strings');
 
         if (actions && !isStringArray(actions))
-            throw new Error('Parameter "actions" have to be an array of strings');
+            throw new Error('Service parameter "actions" have to be an array of strings');
 
         if (localActions) {
             if (!isObject(localActions))
-                throw new Error('Parameter "localActions" have to be an object');
+                throw new Error('Service parameter "localActions" have to be an object');
 
             if (actions) {
                 const namesIntersection = intersection(actions, Object.keys(localActions));
                 if (namesIntersection.length)
-                    throw new Error(`There are names intersects between actions and local actions: ${namesIntersection}`);
+                    throw new Error(`There are names intersection between actions and local actions: ${namesIntersection}`);
             }
 
             Object.values(localActions).forEach(a => a instanceof Action || Action.validateConfig(a));

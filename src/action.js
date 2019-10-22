@@ -13,16 +13,16 @@ class Action {
 
     static validateConfig({singletons, actions, plugins, fn}) {
         if (!isFunction(fn))
-            throw new Error('Parameter "fn" have to be a function');
+            throw new Error('Action parameter "fn" have to be a function');
 
         if (singletons && !isStringArray(singletons))
-            throw new Error('Parameter "singletons" have to be an array of strings');
+            throw new Error('Action parameter "singletons" have to be an array of strings');
 
         if (actions && !isStringArray(actions))
-            throw new Error('Parameter "actions" have to be an array of strings');
+            throw new Error('Action parameter "actions" have to be an array of strings');
 
         if (plugins && !isObject(plugins))
-            throw new Error('Parameter "plugins" have to be an object');
+            throw new Error('Action parameter "plugins" have to be an object');
     }
 
     /**

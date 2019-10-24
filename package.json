@@ -1,7 +1,7 @@
 {
   "name": "agata",
-  "version": "1.4.1",
-  "description": "",
+  "version": "1.4.2",
+  "description": "Hybrid dependency injection framework for server-side applications",
   "main": "index.js",
   "scripts": {
     "test": "jest",

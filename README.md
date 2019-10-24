@@ -1,6 +1,10 @@
 # Agata - The microservice framework
+Hybrid* dependency injection framework for server-side applications
+ 
 [![Build Status](https://travis-ci.org/ioncreature/agata.svg?branch=master)](https://travis-ci.org/ioncreature/agata)
 [![Coverage Status](https://coveralls.io/repos/github/ioncreature/agata/badge.svg?branch=master)](https://coveralls.io/github/ioncreature/agata?branch=master)
+
+`Hybrid` here means that it got best parts both from microservices and monoliths
 
 There was few main points to create this framework
 
@@ -18,7 +22,12 @@ Unit tests seems redundant in microservices, their place inside libraries.
 It is better to test business units(actions), contracts(handlers) and user scenarios.
 
 
-## Example: Service without dependencies
+## Examples
+
+For complex example which uses most of framework features take a look at [example-with-agata](https://github.com/ioncreature/example-with-agata) 
+
+
+### Service without dependencies
 ```javascript
 const {Broker} = require('agata');
 
@@ -37,8 +46,11 @@ const broker = Broker({
     },
 });
 
-broker.startService('serviceOne');
-setTimeout(() => broker.stopService('serviceOne'), 5000);
+broker
+    .startService('serviceOne')
+    .then(() => {
+        setTimeout(() => broker.stopService('serviceOne'), 3000);    
+    });
 ```
 
 

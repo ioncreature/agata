@@ -447,7 +447,7 @@ class Broker {
                 if (dependedBy.includes(name))
                     throw new Error(
                         `Found actions circular dependency in service ${serviceName}: ` +
-                        `${[...dependedBy, name, n].join(' -> ')}`
+                        `${[...dependedBy, name, n].join(' -> ')}`,
                     );
 
                 getDependencies(n, [...dependedBy, name]);
@@ -636,7 +636,7 @@ class Broker {
 
     /**
      * @async
-     * @param {{singletons?: Array<string>, actions?: Array<string>}} dependencies
+     * @param {{singletons: Array<string>?, actions: Array<string>?}} dependencies
      * @param {function} handler
      * @returns {Promise<*>}
      */

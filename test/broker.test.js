@@ -63,7 +63,7 @@ describe('Broker Constructor', () => {
                     },
                     two: Service({start() {}}),
                 },
-            })
+            }),
         ).not.toThrow();
     });
 });

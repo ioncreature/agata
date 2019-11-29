@@ -13,6 +13,7 @@ const
     sort = require('toposort'),
     {
         loadFiles,
+        isStringArray,
         DEFAULT_SERVICE_TEMPLATE,
         DEFAULT_SERVICE_TEMPLATE_REMOVE,
         DEFAULT_ACTION_TEMPLATE,
@@ -631,6 +632,41 @@ class Broker {
         });
 
         return result;
+    }
+
+    /**
+     * @async
+     * @param {{singletons?: Array<string>, actions?: Array<string>}} dependencies
+     * @param {function} handler
+     * @returns {Promise<*>}
+     */
+    async run(dependencies = {}, handler) {
+        if (!isObject(dependencies))
+            throw new Error('Parameter "dependencies" have to be an object');
+
+        if (dependencies.singletons && !isStringArray(dependencies.singletons))
+            throw new Error('Parameter "singletons" have to be an array of strings');
+
+        if (dependencies.actions && !isStringArray(dependencies.actions))
+            throw new Error('Parameter "actions" have to be an array of strings');
+
+        if (!isFunction(handler))
+            throw new Error('Parameter "handler" have to be a function');
+
+        const
+            singletonsNames = this.sortSingletons(dependencies.sigletons),
+            actionsNames = this.sortActions('SCRIPT', dependencies.actions, singletonsNames),
+            pluginsNames = this.getServicePlugins(actionsNames, singletonsNames),
+            singletons = await this.startSingletons(singletonsNames);
+
+        await this.startPlugins(pluginsNames);
+        const actions = await this.startActions(actionsNames);
+
+        return handler({
+            singletons: pick(singletons, dependencies.sigletons),
+            actions: pick(actions, dependencies.actions),
+            plugins,
+        });
     }
 }
 

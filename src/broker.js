@@ -13,6 +13,7 @@ const
     sort = require('toposort'),
     {
         loadFiles,
+        isStringArray,
         DEFAULT_SERVICE_TEMPLATE,
         DEFAULT_SERVICE_TEMPLATE_REMOVE,
         DEFAULT_ACTION_TEMPLATE,
@@ -446,7 +447,7 @@ class Broker {
                 if (dependedBy.includes(name))
                     throw new Error(
                         `Found actions circular dependency in service ${serviceName}: ` +
-                        `${[...dependedBy, name, n].join(' -> ')}`
+                        `${[...dependedBy, name, n].join(' -> ')}`,
                     );
 
                 getDependencies(n, [...dependedBy, name]);
@@ -631,6 +632,52 @@ class Broker {
         });
 
         return result;
+    }
+
+    /**
+     * @async
+     * @param {{singletons: Array<string>?, actions: Array<string>?}} dependencies
+     * @param {function} handler
+     * @returns {Promise<*>}
+     */
+    async run(dependencies = {}, handler) {
+        if (!isObject(dependencies))
+            throw new Error('Parameter "dependencies" have to be an object');
+
+        if (dependencies.singletons) {
+            if (!isStringArray(dependencies.singletons))
+                throw new Error('Parameter "singletons" have to be an array of strings');
+
+            const unknownSingletons = dependencies.singletons.filter(s => !this.singletons[s]);
+            if (unknownSingletons.length)
+                throw new Error(`Unknown singletons: ${unknownSingletons.join(', ')}`);
+        }
+
+        if (dependencies.actions) {
+            if (!isStringArray(dependencies.actions))
+                throw new Error('Parameter "actions" have to be an array of strings');
+
+            const unknownActions = dependencies.actions.filter(a => !this.actions[a]);
+            if (unknownActions.length)
+                throw new Error(`Unknown actions: ${unknownActions.join(', ')}`);
+        }
+
+        if (!isFunction(handler))
+            throw new Error('Parameter "handler" have to be a function');
+
+        const
+            singletonsNames = this.sortSingletons(dependencies.singletons || []),
+            actionsNames = this.sortActions('SCRIPT', dependencies.actions || [], singletonsNames),
+            pluginsNames = this.getServicePlugins(actionsNames, singletonsNames),
+            singletons = await this.startSingletons(singletonsNames);
+
+        await this.startPlugins(pluginsNames);
+        const actions = await this.startActions(actionsNames);
+
+        return handler({
+            singletons: pick(singletons, dependencies.singletons),
+            actions: pick(actions, dependencies.actions),
+        });
     }
 }
 

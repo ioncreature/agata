@@ -35,14 +35,14 @@ describe('Broker#run()', () => {
     it('should throw on unknown singletons', async () => {
         const broker = Broker({});
 
-        await expect(broker.run({singletons: 'oops'}, () => 11)).rejects.toThrow();
+        await expect(broker.run({singletons: ['oops']}, () => 11)).rejects.toThrow('Unknown singleton');
     });
 
 
     it('should throw on unknown actions', async () => {
         const broker = Broker({});
 
-        await expect(broker.run({actions: 'oops'}, () => 5)).rejects.toThrow();
+        await expect(broker.run({actions: ['oops']}, () => 5)).rejects.toThrow('Unknown action');
     });
 
 

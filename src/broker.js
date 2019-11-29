@@ -644,18 +644,30 @@ class Broker {
         if (!isObject(dependencies))
             throw new Error('Parameter "dependencies" have to be an object');
 
-        if (dependencies.singletons && !isStringArray(dependencies.singletons))
-            throw new Error('Parameter "singletons" have to be an array of strings');
+        if (dependencies.singletons) {
+            if (!isStringArray(dependencies.singletons))
+                throw new Error('Parameter "singletons" have to be an array of strings');
 
-        if (dependencies.actions && !isStringArray(dependencies.actions))
-            throw new Error('Parameter "actions" have to be an array of strings');
+            const unknownSingletons = dependencies.singletons.filter(s => !this.singletons[s]);
+            if (unknownSingletons.length)
+                throw new Error(`Unknown singletons: ${unknownSingletons.join(', ')}`);
+        }
+
+        if (dependencies.actions) {
+            if (!isStringArray(dependencies.actions))
+                throw new Error('Parameter "actions" have to be an array of strings');
+
+            const unknownActions = dependencies.actions.filter(a => !this.actions[a]);
+            if (unknownActions.length)
+                throw new Error(`Unknown actions: ${unknownActions.join(', ')}`);
+        }
 
         if (!isFunction(handler))
             throw new Error('Parameter "handler" have to be a function');
 
         const
-            singletonsNames = this.sortSingletons(dependencies.sigletons),
-            actionsNames = this.sortActions('SCRIPT', dependencies.actions, singletonsNames),
+            singletonsNames = this.sortSingletons(dependencies.singletons || []),
+            actionsNames = this.sortActions('SCRIPT', dependencies.actions || [], singletonsNames),
             pluginsNames = this.getServicePlugins(actionsNames, singletonsNames),
             singletons = await this.startSingletons(singletonsNames);
 
@@ -663,9 +675,8 @@ class Broker {
         const actions = await this.startActions(actionsNames);
 
         return handler({
-            singletons: pick(singletons, dependencies.sigletons),
+            singletons: pick(singletons, dependencies.singletons),
             actions: pick(actions, dependencies.actions),
-            plugins,
         });
     }
 }

@@ -7,42 +7,37 @@ const
 describe('Broker#run()', () => {
 
     it.each([
-        [undefined, undefined],
-        [{}, undefined],
-        [1, () => {}],
-        [{}, 1],
-        [{singletons: 1}, 1],
-        [{actions: 1}, 1],
-        [{singletons: {}, actions: 1}, 1],
-        [{singletons: 1, actions: {}}, 1],
+        [{singletons: 1}],
+        [{singletons: 'a'}],
+        [{actions: 1}],
+        [{singletons: [], actions: 1}],
+        [{singletons: 1, actions: []}],
     ])(
-        'should throw on invalid params, path: %p %p',
-        async(params, handler) => {
+        'should throw on invalid params, path: %p',
+        async params => {
             const broker = Broker({});
-
-            await expect(broker.run(params, handler)).rejects.toThrow('Parameter');
+            await expect(broker.start(params)).rejects.toThrow('Parameter');
         },
     );
 
 
-    it('should run script without dependencies', async() => {
+    it('should load without dependencies', async() => {
         const broker = Broker({});
-
-        expect(await broker.run({}, () => 17)).toEqual(17);
+        expect(await broker.start({})).toEqual({actions: {}, singletons: {}});
     });
 
 
     it('should throw on unknown singletons', async() => {
         const broker = Broker({});
 
-        await expect(broker.run({singletons: ['oops']}, () => 11)).rejects.toThrow('Unknown singleton');
+        await expect(broker.start({singletons: ['oops']}, () => 11)).rejects.toThrow('Unknown singleton');
     });
 
 
     it('should throw on unknown actions', async() => {
         const broker = Broker({});
 
-        await expect(broker.run({actions: ['oops']}, () => 5)).rejects.toThrow('Unknown action');
+        await expect(broker.start({actions: ['oops']}, () => 5)).rejects.toThrow('Unknown action');
     });
 
 
@@ -57,9 +52,7 @@ describe('Broker#run()', () => {
             },
         });
 
-        expect(
-            await broker.run({singletons: ['one']}, ({singletons: {one}}) => one),
-        ).toEqual({ok: 7});
+        expect(await broker.start({singletons: ['one']})).toEqual({actions: {}, singletons: {one: {ok: 7}}});
     });
 
 
@@ -72,9 +65,8 @@ describe('Broker#run()', () => {
             },
         });
 
-        expect(
-            await broker.run({actions: ['doIt']}, ({actions: {doIt}}) => doIt()),
-        ).toEqual({ok: 3});
+        const dependencies = await broker.start({actions: ['doIt']});
+        expect(dependencies.actions.doIt()).toEqual({ok: 3});
     });
 
 
@@ -101,17 +93,13 @@ describe('Broker#run()', () => {
             },
         });
 
-        const res1 = await broker.run(
-            {singletons: ['one'], actions: ['doIt']},
-            ({singletons: {one}, actions: {doIt}}) => ({one, doIt: doIt()}),
-        );
-        expect(res1).toEqual({one: 5, doIt: 1});
+        const dependencies1 = await broker.start({singletons: ['one'], actions: ['doIt']});
+        expect(dependencies1.singletons).toEqual({one: 5});
+        expect(dependencies1.actions.doIt()).toEqual(1);
 
-        const res2 = await broker.run(
-            {singletons: ['two'], actions: ['doThat']},
-            ({singletons: {two}, actions: {doThat}}) => ({two, doThat: doThat()}),
-        );
-        expect(res2).toEqual({two: 7, doThat: 3});
+        const dependencies2 = await broker.start({singletons: ['two'], actions: ['doThat']});
+        expect(dependencies2.singletons).toEqual({two: 7});
+        expect(dependencies2.actions.doThat()).toEqual(3);
     });
 
 });

@@ -636,48 +636,42 @@ class Broker {
 
     /**
      * @async
-     * @param {{singletons: Array<string>?, actions: Array<string>?}} dependencies
-     * @param {function} handler
-     * @returns {Promise<*>}
+     * @param {Array<string>} [singletons]
+     * @param {Array<string>} [actions]
+     * @returns {Promise<{singletons, actions}>}
      */
-    async run(dependencies = {}, handler) {
-        if (!isObject(dependencies))
-            throw new Error('Parameter "dependencies" have to be an object');
-
-        if (dependencies.singletons) {
-            if (!isStringArray(dependencies.singletons))
+    async start({singletons, actions}) {
+        if (singletons) {
+            if (!isStringArray(singletons))
                 throw new Error('Parameter "singletons" have to be an array of strings');
 
-            const unknownSingletons = dependencies.singletons.filter(s => !this.singletons[s]);
+            const unknownSingletons = singletons.filter(s => !this.singletons[s]);
             if (unknownSingletons.length)
                 throw new Error(`Unknown singletons: ${unknownSingletons.join(', ')}`);
         }
 
-        if (dependencies.actions) {
-            if (!isStringArray(dependencies.actions))
+        if (actions) {
+            if (!isStringArray(actions))
                 throw new Error('Parameter "actions" have to be an array of strings');
 
-            const unknownActions = dependencies.actions.filter(a => !this.actions[a]);
+            const unknownActions = actions.filter(a => !this.actions[a]);
             if (unknownActions.length)
                 throw new Error(`Unknown actions: ${unknownActions.join(', ')}`);
         }
 
-        if (!isFunction(handler))
-            throw new Error('Parameter "handler" have to be a function');
-
         const
-            singletonsNames = this.sortSingletons(dependencies.singletons || []),
-            actionsNames = this.sortActions('SCRIPT', dependencies.actions || [], singletonsNames),
-            pluginsNames = this.getServicePlugins(actionsNames, singletonsNames),
-            singletons = await this.startSingletons(singletonsNames);
+            sortedSingletons = this.sortSingletons(singletons || []),
+            sortedActions = this.sortActions('SCRIPT', actions || [], sortedSingletons),
+            plugins = this.getServicePlugins(sortedActions, sortedSingletons);
 
-        await this.startPlugins(pluginsNames);
-        const actions = await this.startActions(actionsNames);
+        const singletonsInstances = await this.startSingletons(sortedSingletons);
+        await this.startPlugins(plugins);
+        const actionsInstances = await this.startActions(sortedActions);
 
-        return handler({
-            singletons: pick(singletons, dependencies.singletons),
-            actions: pick(actions, dependencies.actions),
-        });
+        return {
+            singletons: pick(singletonsInstances, singletons),
+            actions: pick(actionsInstances, actions),
+        };
     }
 }
 

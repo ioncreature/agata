@@ -1,6 +1,6 @@
 {
   "name": "agata",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Hybrid dependency injection framework for server-side applications",
   "main": "index.js",
   "scripts": {

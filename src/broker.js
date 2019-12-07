@@ -727,12 +727,16 @@ class Broker {
         const loadedDeps = await this.start({
             actions: difference(action.getRequiredActions(), Object.keys(actions || {})),
             singletons: difference(action.getRequiredSingletons(), Object.keys(singletons || {})),
+            plugins: difference(action.getRequiredPlugins(), Object.keys(plugins || {})).reduce((res, plugin) => {
+                res[plugin] = action.getPluginParams(plugin);
+                return res;
+            }, {}),
         });
 
         const deps = {
             actions: {...loadedDeps.actions, ...actions},
             singletons: {...loadedDeps.singletons, ...singletons},
-            plugins: {...plugins},
+            plugins: {...loadedDeps.plugins, ...plugins},
         };
 
         return action.fn(deps);

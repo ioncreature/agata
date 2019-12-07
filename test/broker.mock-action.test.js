@@ -138,23 +138,50 @@ describe('Broker#mockAction()', () => {
                     plugins: {p1: 4},
                     fn: ({plugins: {p1}}) => () => p1 + 8,
                 },
-                doThat: {
+                doIt: {
                     plugins: {p1: 16},
                     actions: ['a1'],
                     singletons: ['s1'],
                     fn: ({plugins: {p1}, singletons: {s1}, actions: {a1}}) => () => a1() + p1 + s1,
-                    // fn: ({plugins: {p1}, singletons: {s1}, actions: {a1}}) => () => {
-                    //     console.log(a1(), p1,s1);
-                    //     return a1() + p1 + s1
-                    // },
                 },
             },
         });
 
-        const action = await broker.mockAction('doThat', {});
-        expect(action()).toEqual(7);
+        const action = await broker.mockAction('doIt', {});
+        expect(action()).toEqual(30);
 
-        throw new Error('implement mocking everything here');
+        const action2 = await broker.mockAction('doIt', {
+            singletons: {s1: 102},
+        });
+        expect(action2()).toEqual(130);
 
+        const action3 = await broker.mockAction('doIt', {
+            actions: {a1: () => 1012},
+        });
+        expect(action3()).toEqual(1030);
+
+        const action4 = await broker.mockAction('doIt', {
+            actions: {a1: () => 1012},
+        });
+        expect(action4()).toEqual(1030);
+
+        const action5 = await broker.mockAction('doIt', {
+            singletons: {s1: 102},
+            actions: {a1: () => 1012},
+        });
+        expect(action5()).toEqual(1130);
+
+        const action6 = await broker.mockAction('doIt', {
+            actions: {a1: () => 1012},
+            plugins: {p1: 10016},
+        });
+        expect(action6()).toEqual(11030);
+
+        const action7 = await broker.mockAction('doIt', {
+            singletons: {s1: 102},
+            actions: {a1: () => 1012},
+            plugins: {p1: 10016},
+        });
+        expect(action7()).toEqual(11130);
     });
 });

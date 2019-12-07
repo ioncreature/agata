@@ -281,10 +281,10 @@ class Broker {
             [...service.getRequiredActions(), ...service.dependencies.localActions],
             service.dependencies.singletons,
         );
-        service.dependencies.plugins = this.getServicePlugins(
-            service.dependencies.actions,
-            service.dependencies.singletons,
-        );
+        service.dependencies.plugins = this.pickPlugins({
+            actions: service.dependencies.actions,
+            singletons: service.dependencies.singletons,
+        });
 
         service.state = SERVICE_LOADED;
     }
@@ -525,18 +525,18 @@ class Broker {
     }
 
 
-    getServicePlugins(actionsNames, singletons) {
-        const plugins = [];
+    pickPlugins({actions, singletons, plugins = []}) {
+        const names = [...plugins];
 
-        actionsNames.forEach(actionName => {
+        actions.forEach(actionName => {
             const action = this.actions[actionName];
             action.getRequiredPlugins().forEach(pluginName => {
-                if (!plugins.includes(pluginName))
-                    plugins.push(pluginName);
+                if (!names.includes(pluginName))
+                    names.push(pluginName);
             });
         });
 
-        plugins.forEach(pluginName => {
+        names.forEach(pluginName => {
             const plugin = this.plugins[pluginName];
 
             const notIncluded = difference(plugin.getRequiredSingletons(), singletons);
@@ -547,7 +547,7 @@ class Broker {
                 );
         });
 
-        return plugins;
+        return names;
     }
 
 
@@ -635,12 +635,14 @@ class Broker {
     }
 
     /**
-     * @async
+     * Returns loaded and started dependencies
      * @param {Array<string>} [singletons]
      * @param {Array<string>} [actions]
+     * @param {Object} [plugins]
      * @returns {Promise<{singletons, actions}>}
      */
-    async start({singletons, actions}) {
+    async start({singletons, actions, plugins}) {
+        const pluginsList = Object.keys(plugins || {});
         if (singletons) {
             if (!isStringArray(singletons))
                 throw new Error('Parameter "singletons" have to be an array of strings');
@@ -659,20 +661,83 @@ class Broker {
                 throw new Error(`Unknown actions: ${unknownActions.join(', ')}`);
         }
 
+        if (plugins) {
+            if (!isObject(plugins))
+                throw new Error('Parameter "plugins" have to be an object');
+
+            const unknownPlugins = pluginsList.filter(a => !this.plugins[a]);
+            if (unknownPlugins.length)
+                throw new Error(`Unknown plugins: ${unknownPlugins.join(', ')}`);
+        }
+
         const
             sortedSingletons = this.sortSingletons(singletons || []),
             sortedActions = this.sortActions('SCRIPT', actions || [], sortedSingletons),
-            plugins = this.getServicePlugins(sortedActions, sortedSingletons);
+            pluginsNames = this.pickPlugins({
+                actions: sortedActions,
+                singletons: sortedSingletons,
+                plugins: pluginsList,
+            });
 
         const singletonsInstances = await this.startSingletons(sortedSingletons);
-        await this.startPlugins(plugins);
+        const pluginsInstances = await this.startPlugins(pluginsNames);
         const actionsInstances = await this.startActions(sortedActions);
+
+        const initializedPlugins = {};
+
+        await Promise.all(pluginsList.map(async pluginName => {
+            initializedPlugins[pluginName] = await pluginsInstances[pluginName](plugins[pluginName]);
+        }));
 
         return {
             singletons: pick(singletonsInstances, singletons),
             actions: pick(actionsInstances, actions),
+            plugins: initializedPlugins,
         };
     }
+
+
+    /**
+     * Returns new action mocked by provided entities.
+     * If it requires not provided entities they will be loaded
+     * @param {string} name
+     * @param {Object} [actions]
+     * @param {Object} [singletons]
+     * @param {Object} [plugins]
+     * @returns {Promise<Function>}
+     */
+    async mockAction(name, {actions, singletons, plugins}) {
+        if (!name)
+            throw new Error('Invalid action name');
+
+        const action = this.actions[name];
+
+        if (!action)
+            throw new Error(`Unknown action "${name}"`);
+
+        if (actions && !isObject(actions))
+            throw new Error('Invalid "actions" parameter');
+
+        if (singletons && !isObject(singletons))
+            throw new Error('Invalid "singletons" parameter');
+
+        if (plugins && !isObject(plugins))
+            throw new Error('Invalid "plugins" parameter');
+
+        const loadedDeps = await this.start({
+            actions: difference(action.getRequiredActions(), Object.keys(actions || {})),
+            singletons: difference(action.getRequiredSingletons(), Object.keys(singletons || {})),
+        });
+
+        const deps = {
+            actions: {...loadedDeps.actions, ...actions},
+            singletons: {...loadedDeps.singletons, ...singletons},
+            plugins: {...plugins},
+        };
+
+        return action.fn(deps);
+    }
+
 }
 
 

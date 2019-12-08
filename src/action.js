@@ -57,7 +57,7 @@ class Action {
 
 
     getPluginParams(name) {
-        return this.plugins[name] && {...this.plugins[name]};
+        return this.plugins[name] && cloneDeep(this.plugins[name]);
     }
 
 

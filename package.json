@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/ioncreature/agata#readme",
   "engines": {
-    "node": ">=10.0.0"
+    "node": ">=12.13.0"
   },
   "dependencies": {
     "glob": "7.1.6",
@@ -29,8 +29,8 @@
   },
   "devDependencies": {
     "coveralls": "3.1.0",
-    "eslint": "7.0.0",
-    "eslint-config-agata": "^0.1.2",
+    "eslint": "7.1.0",
+    "eslint-config-agata": "0.1.5",
     "jest": "26.0.1"
   },
   "eslintConfig": {

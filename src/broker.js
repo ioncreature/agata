@@ -309,9 +309,14 @@ class Broker {
 
         for (const singleton of singletonsToStop) {
             const s = this.singletons[singleton];
-            if (s.stop)
+            if (s.isLoading())
+                throw new Error(`Singleton "${singleton}" is cannot be stopped because it is starting`);
+
+            if (s.stop && s.isLoaded()) {
+                s.state = Singleton.STATE.unloading;
                 await s.stop({state: s.stateData});
-            s.started = false;
+            }
+            s.state = Singleton.STATE.initial;
         }
 
         service.state = SERVICE_STOPPED;
@@ -398,13 +403,20 @@ class Broker {
         for (const name of names) {
             const singleton = this.singletons[name];
 
-            if (!singleton.started) {
+            if (singleton.isInit()) {
+                singleton.state = Singleton.STATE.loading;
                 const singletons = singleton.getRequiredSingletons().reduce((res, n) => {
                     res[n] = this.singletons[n].instance;
                     return res;
                 }, {});
-                singleton.started = true;
-                singleton.instance = await singleton.start({singletons, state: singleton.stateData});
+                singleton.promise = singleton.start({singletons, state: singleton.stateData});
+                singleton.instance = await singleton.promise;
+                singleton.state = Singleton.STATE.loaded;
+            }
+            else if (singleton.isLoading())
+                await singleton.promise;
+            else if (singleton.isUnloading()) {
+                throw new Error(`Singleton ${name} cannot be started because it is stopping`);
             }
 
             result[name] = singleton.instance;

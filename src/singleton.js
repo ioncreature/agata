@@ -18,6 +18,13 @@ class Singleton {
             throw new Error('Singleton parameter "singletons" have to be an array of strings');
     }
 
+    static STATE = {
+        initial: 'initial',
+        loading: 'loading',
+        loaded: 'loaded',
+        unloading: 'unloading',
+    }
+
     /**
      * @param {function} start
      * @param {function} [stop]
@@ -31,6 +38,7 @@ class Singleton {
         this.start = start;
         this.stop = stop;
         this.stateData = {};
+        this.state = Singleton.STATE.initial;
     }
 
 
@@ -39,6 +47,25 @@ class Singleton {
      */
     getRequiredSingletons() {
         return [...this.singletons];
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    isInit() {
+        return this.state === Singleton.STATE.initial;
+    }
+
+    isLoading() {
+        return this.state === Singleton.STATE.loading;
+    }
+
+    isLoaded() {
+        return this.state === Singleton.STATE.loaded;
+    }
+
+    isUnloading() {
+        return this.state === Singleton.STATE.unloading;
     }
 }
 

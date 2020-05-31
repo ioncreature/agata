@@ -718,7 +718,7 @@ class Broker {
      * @param {Object} [plugins]
      * @returns {Promise<Function>}
      */
-    async mockAction(name, {actions, singletons, plugins}) {
+    async mockAction(name, {actions, singletons, plugins} = {}) {
         if (!name)
             throw new Error('Invalid action name');
 

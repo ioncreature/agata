@@ -16,7 +16,6 @@ describe('Broker#mockAction()', () => {
     it.each([
         [undefined, undefined],
         [undefined, {}],
-        ['doIt', undefined],
         ['doIt', {actions: 1}],
         ['doIt', {singletons: 1}],
         ['doIt', {plugins: 1}],
@@ -40,7 +39,7 @@ describe('Broker#mockAction()', () => {
             },
         });
 
-        const action = await broker.mockAction('doIt', {});
+        const action = await broker.mockAction('doIt');
         expect(typeof action === 'function').toBeTruthy();
         expect(action()).toEqual(1);
     });

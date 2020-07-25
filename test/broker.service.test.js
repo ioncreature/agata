@@ -239,10 +239,12 @@ describe('Services start and stop', () => {
                 first: {
                     singletons: ['s1', 's3'],
                     start() {},
+                    stop() {},
                 },
                 second: {
                     singletons: ['s2', 's4'],
                     start() {},
+                    stop() {},
                 },
             },
         });
@@ -265,6 +267,12 @@ describe('Services start and stop', () => {
 
         await broker.stopService('first');
         await broker.stopService('second');
+        expect(state).toEqual({s1: 'stopped', s2: 'stopped', s3: 'stopped', s4: 'stopped'});
+
+        await broker.startService('first');
+        await broker.startService('second');
+        expect(state).toEqual({s1: 'started', s2: 'started', s3: 'started', s4: 'started'});
+        await broker.stopAll();
         expect(state).toEqual({s1: 'stopped', s2: 'stopped', s3: 'stopped', s4: 'stopped'});
     });
 

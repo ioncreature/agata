@@ -1,6 +1,6 @@
 {
   "name": "agata",
-  "version": "2.2.2",
+  "version": "2.3.0",
   "description": "Hybrid dependency injection framework for server-side applications",
   "main": "index.js",
   "scripts": {
@@ -29,9 +29,9 @@
   },
   "devDependencies": {
     "coveralls": "3.1.0",
-    "eslint": "7.1.0",
-    "eslint-config-agata": "0.1.5",
-    "jest": "26.0.1"
+    "eslint": "7.5.0",
+    "eslint-config-agata": "0.1.6",
+    "jest": "26.1.0"
   },
   "eslintConfig": {
     "extends": "agata",

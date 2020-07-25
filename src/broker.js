@@ -310,7 +310,7 @@ class Broker {
         for (const singleton of singletonsToStop) {
             const s = this.singletons[singleton];
             if (s.isLoading())
-                throw new Error(`Singleton "${singleton}" is cannot be stopped because it is starting`);
+                throw new Error(`Singleton "${singleton}" cannot be stopped because it is starting`);
 
             if (s.stop && s.isLoaded()) {
                 s.state = Singleton.STATE.unloading;
@@ -320,6 +320,26 @@ class Broker {
         }
 
         service.state = SERVICE_STOPPED;
+    }
+
+    async stopAll() {
+        const runningServices = this.getRunningServices();
+        await Promise.all(runningServices.map(async name => {
+            const service = this.getServiceByName(name);
+            if (service.stopHandler)
+                await service.stopHandler({state: service.stateData});
+        }));
+        const sortedSingletons = this.sortSingletons(Object.keys(this.singletons)).reverse();
+
+        for (const singletonName of sortedSingletons) {
+            const singleton = this.singletons[singletonName];
+            if (singleton.stop && (singleton.isLoaded() || singleton.isLoading())) {
+                await singleton.promise;
+                singleton.state = Singleton.STATE.unloading;
+                await singleton.stop({state: singleton.stateData});
+            }
+            singleton.state = Singleton.STATE.initial;
+        }
     }
 
 
@@ -416,7 +436,7 @@ class Broker {
             else if (singleton.isLoading())
                 await singleton.promise;
             else if (singleton.isUnloading()) {
-                throw new Error(`Singleton ${name} cannot be started because it is stopping`);
+                throw new Error(`Cannot start singleton "${name}" because it is stopping now`);
             }
 
             result[name] = singleton.instance;

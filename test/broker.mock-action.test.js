@@ -126,7 +126,7 @@ describe('Broker#mockAction()', () => {
                 },
             },
             singletons: {
-                s1: {
+                'field.s1': {
                     start() {
                         return 2;
                     },
@@ -140,17 +140,17 @@ describe('Broker#mockAction()', () => {
                 doIt: {
                     plugins: {p1: 16},
                     actions: ['a1'],
-                    singletons: ['s1'],
-                    fn: ({plugins: {p1}, singletons: {s1}, actions: {a1}}) => () => a1() + p1 + s1,
+                    singletons: ['field.s1'],
+                    fn: ({plugins: {p1}, singletons: {field: {s1}}, actions: {a1}}) => () => a1() + p1 + s1,
                 },
             },
         });
 
-        const action = await broker.mockAction('doIt', {});
+        const action = await broker.mockAction('doIt');
         expect(action()).toEqual(30);
 
         const action2 = await broker.mockAction('doIt', {
-            singletons: {s1: 102},
+            singletons: {field: {s1: 102}},
         });
         expect(action2()).toEqual(130);
 
@@ -165,7 +165,7 @@ describe('Broker#mockAction()', () => {
         expect(action4()).toEqual(1030);
 
         const action5 = await broker.mockAction('doIt', {
-            singletons: {s1: 102},
+            singletons: {field: {s1: 102}},
             actions: {a1: () => 1012},
         });
         expect(action5()).toEqual(1130);
@@ -177,7 +177,7 @@ describe('Broker#mockAction()', () => {
         expect(action6()).toEqual(11030);
 
         const action7 = await broker.mockAction('doIt', {
-            singletons: {s1: 102},
+            singletons: {field: {s1: 102}},
             actions: {a1: () => 1012},
             plugins: {p1: 10016},
         });

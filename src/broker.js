@@ -9,6 +9,7 @@ const
         isString,
         pick,
         set,
+        merge,
     } = require('lodash'),
     sort = require('toposort'),
     {
@@ -439,7 +440,7 @@ class Broker {
                 throw new Error(`Cannot start singleton "${name}" because it is stopping now`);
             }
 
-            result[name] = singleton.instance;
+            set(result, name, singleton.instance);
         }
 
         return result;
@@ -494,7 +495,7 @@ class Broker {
         for (const name of names) {
             const action = this.actions[name];
 
-            action.initializedFn = await this.initAction(name); // todo: race condition here :(
+            action.initializedFn = await this.initAction(name); // todo: fix race condition here :(
 
             const realName = name.includes('#') ? name.split('#')[1] : name;
             set(result, realName, action.initializedFn);
@@ -550,7 +551,7 @@ class Broker {
                 plugin.instance = await plugin.start({singletons});
             }
 
-            plugins[name] = plugin.instance;
+            set(plugins, name, plugin.instance);
         }));
 
         return plugins;
@@ -671,7 +672,7 @@ class Broker {
      * @param {Array<string>} [singletons]
      * @param {Array<string>} [actions]
      * @param {Object} [plugins]
-     * @returns {Promise<{singletons, actions}>}
+     * @returns {Promise<{singletons, actions, plugins}>}
      */
     async start({singletons, actions, plugins}) {
         const pluginsList = Object.keys(plugins || {});
@@ -733,9 +734,9 @@ class Broker {
      * Returns new action mocked by provided entities.
      * If it requires not provided entities they will be loaded
      * @param {string} name
-     * @param {Object} [actions]
-     * @param {Object} [singletons]
-     * @param {Object} [plugins]
+     * @param {Object<string, Function>} [actions] map of full name to Action function
+     * @param {Object<string, Any>} [singletons] map of full name to Singleton value
+     * @param {Object<string, Function>} [plugins] map of full name to Plugin value
      * @returns {Promise<Function>}
      */
     async mockAction(name, {actions, singletons, plugins} = {}) {
@@ -766,9 +767,9 @@ class Broker {
         });
 
         const deps = {
-            actions: {...loadedDeps.actions, ...actions},
-            singletons: {...loadedDeps.singletons, ...singletons},
-            plugins: {...loadedDeps.plugins, ...plugins},
+            actions: merge({}, loadedDeps.actions, actions),
+            singletons: merge({}, loadedDeps.singletons, singletons),
+            plugins: merge({}, loadedDeps.plugins, plugins),
         };
 
         return action.fn(deps);

@@ -427,7 +427,7 @@ class Broker {
             if (singleton.isInit()) {
                 singleton.state = Singleton.STATE.loading;
                 const singletons = singleton.getRequiredSingletons().reduce((res, n) => {
-                    res[n] = this.singletons[n].instance;
+                    set(res, n, this.singletons[n].instance);
                     return res;
                 }, {});
                 singleton.promise = singleton.start({singletons, state: singleton.stateData});
@@ -524,7 +524,7 @@ class Broker {
         const plugins = {};
         await Promise.all(action.getRequiredPlugins().map(async pluginName => {
             const plugin = this.plugins[pluginName];
-            plugins[pluginName] = await plugin.instance(action.getPluginParams(pluginName));
+            set(plugins, pluginName, await plugin.instance(action.getPluginParams(pluginName)));
         }));
 
         const fn = await action.fn({actions, singletons, plugins});

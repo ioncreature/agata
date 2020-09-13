@@ -105,7 +105,7 @@ describe('Service singletons', () => {
     });
 
 
-    test('Service throws if there a cyclic dependency', () => {
+    test('Service throws if there is a cyclic dependency', () => {
         const broker = Broker({
             singletons: {
                 s0: {
@@ -132,14 +132,14 @@ describe('Service singletons', () => {
     test('Start service with singletons depended on other singletons', async() => {
         const broker = Broker({
             singletons: {
-                s0: {
+                's0.s0': {
                     start() {
                         return {ok: 0};
                     },
                 },
                 s1: {
-                    singletons: ['s0'],
-                    start({singletons: {s0}}) {
+                    singletons: ['s0.s0'],
+                    start({singletons: {s0: {s0}}}) {
                         expect(s0).toEqual({ok: 0});
                         return {ok: 1};
                     },

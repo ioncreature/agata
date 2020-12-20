@@ -1,31 +1,29 @@
 'use strict';
 
-const
-    {Broker} = require('../index');
-
+const {Broker} = require('../index');
 
 describe('Service local actions', () => {
-
     it('should throw if local actions requires unknown action', () => {
-        expect(() => Broker({
-            services: {
-                first: {
-                    localActions: {
-                        get5: {
-                            actions: ['a'],
-                            fn() {
-                                return () => 5;
+        expect(() =>
+            Broker({
+                services: {
+                    first: {
+                        localActions: {
+                            get5: {
+                                actions: ['a'],
+                                fn() {
+                                    return () => 5;
+                                },
                             },
                         },
+                        start() {},
                     },
-                    start() {},
                 },
-            },
-        })).toThrow(/requires unknown action/);
+            }),
+        ).toThrow(/requires unknown action/);
     });
 
-
-    it('should start service with local actions', async() => {
+    it('should start service with local actions', async () => {
         const broker = Broker({
             services: {
                 first: {
@@ -46,8 +44,7 @@ describe('Service local actions', () => {
         await broker.startService('first');
     });
 
-
-    it('should start service with local actions with dependencies', async() => {
+    it('should start service with local actions with dependencies', async () => {
         const broker = Broker({
             actions: {
                 a1: {
@@ -92,5 +89,4 @@ describe('Service local actions', () => {
 
         await broker.startService('first');
     });
-
 });

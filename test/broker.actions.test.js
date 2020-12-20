@@ -1,30 +1,28 @@
 'use strict';
 
-const
-    {Broker} = require('../index');
-
+const {Broker} = require('../index');
 
 describe('Service actions', () => {
-
-    it('should throw if action requires unknown singleton', async() => {
-        expect(() => Broker({
-            actions: {
-                a1: {
-                    singletons: ['s0'],
-                    fn() {},
+    it('should throw if action requires unknown singleton', async () => {
+        expect(() =>
+            Broker({
+                actions: {
+                    a1: {
+                        singletons: ['s0'],
+                        fn() {},
+                    },
                 },
-            },
-            services: {
-                first: {
-                    actions: ['a1'],
-                    start() {},
+                services: {
+                    first: {
+                        actions: ['a1'],
+                        start() {},
+                    },
                 },
-            },
-        })).toThrow(/requires unknown singleton/);
+            }),
+        ).toThrow(/requires unknown singleton/);
     });
 
-
-    it('should throw if action requires not included singleton', async() => {
+    it('should throw if action requires not included singleton', async () => {
         const broker = Broker({
             singletons: {
                 s0: {start() {}},
@@ -47,20 +45,20 @@ describe('Service actions', () => {
         await expect(broker.startService('first')).rejects.toThrow();
     });
 
-
     it('throws on unknown actions', () => {
-        expect(() => Broker({
-            services: {
-                first: {
-                    actions: ['a1'],
-                    start() {},
+        expect(() =>
+            Broker({
+                services: {
+                    first: {
+                        actions: ['a1'],
+                        start() {},
+                    },
                 },
-            },
-        })).toThrow();
+            }),
+        ).toThrow();
     });
 
-
-    it('should load service with one action', async() => {
+    it('should load service with one action', async () => {
         const broker = Broker({
             actions: {
                 add: {
@@ -83,8 +81,7 @@ describe('Service actions', () => {
         await broker.startService('first');
     });
 
-
-    it('should throw if loaded action does not return function', async() => {
+    it('should throw if loaded action does not return function', async () => {
         const broker = Broker({
             actions: {
                 oops: {
@@ -104,8 +101,7 @@ describe('Service actions', () => {
         await expect(broker.startService('first')).rejects.toThrow();
     });
 
-
-    it('should throw if there is circular dependency in actions', async() => {
+    it('should throw if there is circular dependency in actions', async () => {
         const broker = Broker({
             actions: {
                 a1: {
@@ -138,8 +134,7 @@ describe('Service actions', () => {
         await expect(broker.startService('first')).rejects.toThrow();
     });
 
-
-    it('should load actions and singletons', async() => {
+    it('should load actions and singletons', async () => {
         const broker = Broker({
             singletons: {
                 s1: {
@@ -201,8 +196,7 @@ describe('Service actions', () => {
         await broker.startService('first');
     });
 
-
-    it('should initialize action once even if there is more than one service in one process', async() => {
+    it('should initialize action once even if there is more than one service in one process', async () => {
         const init = {inc: 0, add: 0};
 
         const broker = Broker({
@@ -243,5 +237,4 @@ describe('Service actions', () => {
         await broker.startService('second');
         expect(init).toEqual({inc: 1, add: 1});
     });
-
 });

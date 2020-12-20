@@ -1,11 +1,8 @@
 'use strict';
 
-const
-    {Broker} = require('../index');
-
+const {Broker} = require('../index');
 
 describe('Broker#getDependencies()', () => {
-
     it('should return only one service in dependency tree', () => {
         const broker = Broker({
             services: {
@@ -27,7 +24,6 @@ describe('Broker#getDependencies()', () => {
             plugins: {},
         });
     });
-
 
     it('should return only service with singleton, action and plugin', () => {
         const broker = Broker({
@@ -88,8 +84,7 @@ describe('Broker#getDependencies()', () => {
         });
     });
 
-
-    it('should return complex dependency tree', async() => {
+    it('should return complex dependency tree', async () => {
         const broker = Broker({
             singletons: {
                 redis: {
@@ -105,7 +100,8 @@ describe('Broker#getDependencies()', () => {
                 },
             },
             plugins: {
-                publisher: { // let's suppose that we are implementing communication between services with redis pubsub
+                publisher: {
+                    // let's suppose that we are implementing communication between services with redis pubsub
                     singletons: ['redis'],
                     start() {
                         return () => {};
@@ -182,13 +178,7 @@ describe('Broker#getDependencies()', () => {
         expect(deps.services.serviceB).toEqual({
             singletons: ['redis', 'cache', 'postgres'],
             plugins: ['subscriber', 'publisher'],
-            actions: [
-                'some.doA',
-                'some.doB',
-                'some.doC',
-                'serviceB#localActionC',
-                'serviceB#localActionB',
-            ],
+            actions: ['some.doA', 'some.doB', 'some.doC', 'serviceB#localActionC', 'serviceB#localActionB'],
             localActions: ['serviceB#localActionB', 'serviceB#localActionC'],
         });
 
@@ -239,5 +229,4 @@ describe('Broker#getDependencies()', () => {
             },
         });
     });
-
 });

@@ -1,12 +1,9 @@
 'use strict';
 
-const
-    {Broker} = require('../index');
-
+const {Broker} = require('../index');
 
 describe('Services start and stop', () => {
-
-    test('Start simple service', async() => {
+    test('Start simple service', async () => {
         let started = false;
         const broker = Broker({
             services: {
@@ -23,8 +20,7 @@ describe('Services start and stop', () => {
         expect(broker.isServiceRunning('first')).toBe(true);
     });
 
-
-    test('Start service once', async() => {
+    test('Start service once', async () => {
         let started = 0;
         const broker = Broker({
             services: {
@@ -43,8 +39,7 @@ describe('Services start and stop', () => {
         expect(started).toBe(1);
     });
 
-
-    test('Service state is passed to start and stop', async() => {
+    test('Service state is passed to start and stop', async () => {
         const broker = Broker({
             services: {
                 first: {
@@ -63,8 +58,7 @@ describe('Services start and stop', () => {
         await broker.stopService('first');
     });
 
-
-    test('Singleton state is passed to start and stop', async() => {
+    test('Singleton state is passed to start and stop', async () => {
         const broker = Broker({
             singletons: {
                 s1: {
@@ -89,8 +83,7 @@ describe('Services start and stop', () => {
         await broker.stopService('first');
     });
 
-
-    it('should stop service with no singletons', async() => {
+    it('should stop service with no singletons', async () => {
         let i = 0;
 
         const broker = Broker({
@@ -116,10 +109,8 @@ describe('Services start and stop', () => {
         expect(i).toEqual(-1);
     });
 
-
-    it('should stop service with singletons', async() => {
-        let
-            srv = 'init',
+    it('should stop service with singletons', async () => {
+        let srv = 'init',
             sng = 'init';
 
         const broker = Broker({
@@ -159,8 +150,7 @@ describe('Services start and stop', () => {
         expect(sng).toBe('stopped');
     });
 
-
-    it('should stop service once even if .stopHandler() called more than once', async() => {
+    it('should stop service once even if .stopHandler() called more than once', async () => {
         let stops = 0;
 
         const broker = Broker({
@@ -190,8 +180,7 @@ describe('Services start and stop', () => {
         expect(stops).toBe(2);
     });
 
-
-    it('should stop singletons which are not in use', async() => {
+    it('should stop singletons which are not in use', async () => {
         const state = {
             s1: 'init',
             s2: 'init',
@@ -275,5 +264,4 @@ describe('Services start and stop', () => {
         await broker.stopAll();
         expect(state).toEqual({s1: 'stopped', s2: 'stopped', s3: 'stopped', s4: 'stopped'});
     });
-
 });

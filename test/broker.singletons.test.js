@@ -1,54 +1,55 @@
 'use strict';
 
-const
-    {Broker} = require('../index');
-
+const {Broker} = require('../index');
 
 describe('Service singletons', () => {
-
     test('Broker throws if service depends on unknown singleton', () => {
-        expect(() => Broker({
-            services: {
-                first: {
-                    singletons: ['s1'],
-                    start() {},
+        expect(() =>
+            Broker({
+                services: {
+                    first: {
+                        singletons: ['s1'],
+                        start() {},
+                    },
                 },
-            },
-        })).toThrow();
+            }),
+        ).toThrow();
 
-        expect(() => Broker({
-            singletons: {
-                s1: {start() {}},
-            },
-            services: {
-                first: {
-                    singletons: ['s2'],
-                    start() {},
+        expect(() =>
+            Broker({
+                singletons: {
+                    s1: {start() {}},
                 },
-            },
-        })).toThrow();
+                services: {
+                    first: {
+                        singletons: ['s2'],
+                        start() {},
+                    },
+                },
+            }),
+        ).toThrow();
     });
-
 
     test('Broker throws if singleton depends on unknown singleton', () => {
-        expect(() => Broker({
-            singletons: {
-                s1: {
-                    singletons: ['fakeOne'],
-                    start() {},
+        expect(() =>
+            Broker({
+                singletons: {
+                    s1: {
+                        singletons: ['fakeOne'],
+                        start() {},
+                    },
                 },
-            },
-            services: {
-                first: {
-                    singletons: ['s1'],
-                    start() {},
+                services: {
+                    first: {
+                        singletons: ['s1'],
+                        start() {},
+                    },
                 },
-            },
-        })).toThrow();
+            }),
+        ).toThrow();
     });
 
-
-    test('Start service with one singleton', async() => {
+    test('Start service with one singleton', async () => {
         let serviceStarted = false,
             singletonStarted = false;
 
@@ -75,8 +76,7 @@ describe('Service singletons', () => {
         expect(serviceStarted).toBe(true);
     });
 
-
-    test('Start singletons once if few services starts in one process', async() => {
+    test('Start singletons once if few services starts in one process', async () => {
         let runs = 0;
 
         const broker = Broker({
@@ -104,7 +104,6 @@ describe('Service singletons', () => {
         expect(runs).toEqual(1);
     });
 
-
     test('Service throws if there is a cyclic dependency', () => {
         const broker = Broker({
             singletons: {
@@ -128,8 +127,7 @@ describe('Service singletons', () => {
         expect(broker.startService('first')).rejects.toThrow(/singletons circular dependency/);
     });
 
-
-    test('Start service with singletons depended on other singletons', async() => {
+    test('Start service with singletons depended on other singletons', async () => {
         const broker = Broker({
             singletons: {
                 's0.s0': {
@@ -139,7 +137,11 @@ describe('Service singletons', () => {
                 },
                 s1: {
                     singletons: ['s0.s0'],
-                    start({singletons: {s0: {s0}}}) {
+                    start({
+                        singletons: {
+                            s0: {s0},
+                        },
+                    }) {
                         expect(s0).toEqual({ok: 0});
                         return {ok: 1};
                     },
@@ -185,5 +187,4 @@ describe('Service singletons', () => {
 
         await broker.startService('first');
     });
-
 });

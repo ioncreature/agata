@@ -1,14 +1,11 @@
 'use strict';
 
-const
-    {Broker, Action, Plugin, Service, Singleton} = require('../index');
+const {Broker, Action, Plugin, Service, Singleton} = require('../index');
 
 describe('Broker Constructor', () => {
-
     test('Constructor without parameters should throw', () => {
         expect(() => Broker()).toThrow();
     });
-
 
     test('Constructor should throw with invalid parameters', () => {
         expect(() => Broker({actions: 1})).toThrow();
@@ -27,15 +24,14 @@ describe('Broker Constructor', () => {
         expect(() => Broker({services: {test: {fn: 2}}})).toThrow();
     });
 
-
     test('Constructor should create broker with valid parameters', () => {
         expect(() => Broker({})).not.toThrow();
         expect(() => Broker({actions: {}})).not.toThrow();
         expect(() => Broker({singletons: {}})).not.toThrow();
         expect(() => Broker({plugins: {}})).not.toThrow();
         expect(() => Broker({services: {}})).not.toThrow();
-        expect(
-            () => Broker({
+        expect(() =>
+            Broker({
                 singletons: {
                     test1: {start() {}},
                     test2: Singleton({start() {}, singletons: ['test1']}),
@@ -68,30 +64,22 @@ describe('Broker Constructor', () => {
     });
 });
 
-
 describe('#getServiceByName(name)', () => {
-
     it('should throw if name invalid', () => {
         const broker = Broker({});
         expect(() => broker.getServiceByName()).toThrow();
         expect(() => broker.getServiceByName(1)).toThrow();
     });
 
-
     it('should throw if there is no service with given name', () => {
         const broker = Broker({});
         expect(() => broker.getServiceByName('alala')).toThrow();
     });
 
-
     it('should return service if name is existing', () => {
-        const
-            service = Service({start() {}}),
+        const service = Service({start() {}}),
             broker = Broker({services: {service}});
 
         expect(broker.getServiceByName('service')).toEqual(service);
     });
-
 });
-
-

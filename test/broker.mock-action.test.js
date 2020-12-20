@@ -1,17 +1,13 @@
 'use strict';
 
-const
-    {Broker} = require('../index');
-
+const {Broker} = require('../index');
 
 describe('Broker#mockAction()', () => {
-
-    it('should throw if action is unknown', async() => {
+    it('should throw if action is unknown', async () => {
         const broker = Broker({});
 
         await expect(broker.mockAction('a', {})).rejects.toThrow('Unknown action');
     });
-
 
     it.each([
         [undefined, undefined],
@@ -19,20 +15,16 @@ describe('Broker#mockAction()', () => {
         ['doIt', {actions: 1}],
         ['doIt', {singletons: 1}],
         ['doIt', {plugins: 1}],
-    ])(
-        'should throw on invalid params, path: %p %p',
-        async(name, params) => {
-            const broker = Broker({
-                actions: {
-                    doIt: {fn: () => () => {}},
-                },
-            });
-            await expect(broker.mockAction(name, params)).rejects.toThrow();
-        },
-    );
+    ])('should throw on invalid params, path: %p %p', async (name, params) => {
+        const broker = Broker({
+            actions: {
+                doIt: {fn: () => () => {}},
+            },
+        });
+        await expect(broker.mockAction(name, params)).rejects.toThrow();
+    });
 
-
-    it('should mock with nothing', async() => {
+    it('should mock with nothing', async () => {
         const broker = Broker({
             actions: {
                 doIt: {fn: () => () => 1},
@@ -44,8 +36,7 @@ describe('Broker#mockAction()', () => {
         expect(action()).toEqual(1);
     });
 
-
-    it('should mock one action', async() => {
+    it('should mock one action', async () => {
         const broker = Broker({
             actions: {
                 doIt: {fn: () => () => 1},
@@ -65,8 +56,7 @@ describe('Broker#mockAction()', () => {
         expect(action2()).toEqual(6);
     });
 
-
-    it('should mock singleton for action', async() => {
+    it('should mock singleton for action', async () => {
         const broker = Broker({
             singletons: {
                 s1: {
@@ -90,8 +80,7 @@ describe('Broker#mockAction()', () => {
         expect(action2()).toEqual(5);
     });
 
-
-    it('should mock plugin for action', async() => {
+    it('should mock plugin for action', async () => {
         const broker = Broker({
             plugins: {
                 p1: {
@@ -115,8 +104,7 @@ describe('Broker#mockAction()', () => {
         expect(action2()).toEqual(12);
     });
 
-
-    it('should mock everything', async() => {
+    it('should mock everything', async () => {
         const broker = Broker({
             plugins: {
                 p1: {
@@ -141,7 +129,13 @@ describe('Broker#mockAction()', () => {
                     plugins: {p1: 16},
                     actions: ['a1'],
                     singletons: ['field.s1'],
-                    fn: ({plugins: {p1}, singletons: {field: {s1}}, actions: {a1}}) => () => a1() + p1 + s1,
+                    fn: ({
+                        plugins: {p1},
+                        singletons: {
+                            field: {s1},
+                        },
+                        actions: {a1},
+                    }) => () => a1() + p1 + s1,
                 },
             },
         });

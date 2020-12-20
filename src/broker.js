@@ -1,44 +1,32 @@
 'use strict';
 
-
-const
-    {
-        difference,
-        isFunction,
-        isObject,
-        isString,
-        pick,
-        set,
-        merge,
-    } = require('lodash'),
-    sort = require('toposort'),
-    {
-        loadFiles,
-        isStringArray,
-        DEFAULT_SERVICE_TEMPLATE,
-        DEFAULT_SERVICE_TEMPLATE_REMOVE,
-        DEFAULT_ACTION_TEMPLATE,
-        DEFAULT_ACTION_TEMPLATE_REMOVE,
-        DEFAULT_SINGLETON_TEMPLATE,
-        DEFAULT_SINGLETON_TEMPLATE_REMOVE,
-        DEFAULT_PLUGIN_TEMPLATE,
-        DEFAULT_PLUGIN_TEMPLATE_REMOVE,
-        SERVICE_CREATED,
-        SERVICE_LOADED,
-        SERVICE_RUNNING,
-        SERVICE_STOPPED,
-    } = require('./utils'),
-    Service = require('./service'),
-    Singleton = require('./singleton'),
-    Action = require('./action'),
-    Plugin = require('./plugin');
-
+const {difference, isFunction, isObject, isString, pick, set, merge} = require('lodash');
+const sort = require('toposort');
+const {
+    loadFiles,
+    isStringArray,
+    DEFAULT_SERVICE_TEMPLATE,
+    DEFAULT_SERVICE_TEMPLATE_REMOVE,
+    DEFAULT_ACTION_TEMPLATE,
+    DEFAULT_ACTION_TEMPLATE_REMOVE,
+    DEFAULT_SINGLETON_TEMPLATE,
+    DEFAULT_SINGLETON_TEMPLATE_REMOVE,
+    DEFAULT_PLUGIN_TEMPLATE,
+    DEFAULT_PLUGIN_TEMPLATE_REMOVE,
+    SERVICE_CREATED,
+    SERVICE_LOADED,
+    SERVICE_RUNNING,
+    SERVICE_STOPPED,
+} = require('./utils');
+const Service = require('./service');
+const Singleton = require('./singleton');
+const Action = require('./action');
+const Plugin = require('./plugin');
 
 /**
  * Dependencies broker
  */
 class Broker {
-
     /**
      * @param {string} [singletonsPath]
      * @param {string} [actionsPath]
@@ -49,16 +37,7 @@ class Broker {
      * @param {Object} [plugins]
      * @param {Object} [services]
      */
-    constructor({
-        singletons,
-        actions,
-        plugins,
-        services,
-        singletonsPath,
-        actionsPath,
-        pluginsPath,
-        servicesPath,
-    }) {
+    constructor({singletons, actions, plugins, services, singletonsPath, actionsPath, pluginsPath, servicesPath}) {
         this.singletons = {};
         this.actions = {};
         this.plugins = {};
@@ -70,55 +49,43 @@ class Broker {
         this.pluginsPath = pluginsPath;
 
         if (singletons) {
-            if (!isObject(singletons))
-                throw new Error('Parameter "singletons" have to be an object');
+            if (!isObject(singletons)) throw new Error('Parameter "singletons" have to be an object');
 
             Object.values(singletons).forEach(s => s instanceof Singleton || Singleton.validateConfig(s));
-            this.singletons = Object
-                .entries(singletons)
-                .reduce((res, [name, s]) => {
-                    res[name] = s instanceof Singleton ? s : new Singleton(s);
-                    return res;
-                }, {});
+            this.singletons = Object.entries(singletons).reduce((res, [name, s]) => {
+                res[name] = s instanceof Singleton ? s : new Singleton(s);
+                return res;
+            }, {});
         }
 
         if (actions) {
-            if (!isObject(actions))
-                throw new Error('Parameter "actions" have to be an object');
+            if (!isObject(actions)) throw new Error('Parameter "actions" have to be an object');
 
             Object.values(actions).forEach(a => a instanceof Action || Action.validateConfig(a));
-            this.actions = Object
-                .entries(actions)
-                .reduce((res, [name, a]) => {
-                    res[name] = a instanceof Action ? a : new Action(a);
-                    return res;
-                }, {});
+            this.actions = Object.entries(actions).reduce((res, [name, a]) => {
+                res[name] = a instanceof Action ? a : new Action(a);
+                return res;
+            }, {});
         }
 
         if (plugins) {
-            if (!isObject(plugins))
-                throw new Error('Parameter "plugins" have to be an object');
+            if (!isObject(plugins)) throw new Error('Parameter "plugins" have to be an object');
 
             Object.values(plugins).forEach(a => a instanceof Plugin || Plugin.validateConfig(a));
-            this.plugins = Object
-                .entries(plugins)
-                .reduce((res, [name, p]) => {
-                    res[name] = p instanceof Plugin ? p : new Plugin(p);
-                    return res;
-                }, {});
+            this.plugins = Object.entries(plugins).reduce((res, [name, p]) => {
+                res[name] = p instanceof Plugin ? p : new Plugin(p);
+                return res;
+            }, {});
         }
 
         if (services) {
-            if (!isObject(services))
-                throw new Error('Parameter "services" have to be an object');
+            if (!isObject(services)) throw new Error('Parameter "services" have to be an object');
 
             Object.values(services).forEach(s => s instanceof Service || Service.validateConfig(s));
-            this.services = Object
-                .entries(services)
-                .reduce((res, [name, s]) => {
-                    res[name] = s instanceof Service ? s : new Service(s);
-                    return res;
-                }, {});
+            this.services = Object.entries(services).reduce((res, [name, s]) => {
+                res[name] = s instanceof Service ? s : new Service(s);
+                return res;
+            }, {});
         }
 
         // load services from fs
@@ -130,8 +97,7 @@ class Broker {
             });
 
             files.forEach(([name, file]) => {
-                if (this.services[name])
-                    throw new Error(`Service with name "${name}" already exists`);
+                if (this.services[name]) throw new Error(`Service with name "${name}" already exists`);
 
                 this.services[name] = file instanceof Service ? file : new Service(file);
             });
@@ -152,8 +118,7 @@ class Broker {
             });
 
             files.forEach(([name, file]) => {
-                if (this.singletons[name])
-                    throw new Error(`Singleton with name "${name}" already exists`);
+                if (this.singletons[name]) throw new Error(`Singleton with name "${name}" already exists`);
 
                 this.singletons[name] = file instanceof Singleton ? file : new Singleton(file);
             });
@@ -168,8 +133,7 @@ class Broker {
             });
 
             files.forEach(([name, file]) => {
-                if (this.plugins[name])
-                    throw new Error(`Plugin with name "${name}" already exists`);
+                if (this.plugins[name]) throw new Error(`Plugin with name "${name}" already exists`);
 
                 this.plugins[name] = file instanceof Plugin ? file : new Plugin(file);
             });
@@ -184,8 +148,7 @@ class Broker {
             });
 
             files.forEach(([name, file]) => {
-                if (this.actions[name])
-                    throw new Error(`Action with name "${name}" already exists`);
+                if (this.actions[name]) throw new Error(`Action with name "${name}" already exists`);
 
                 this.actions[name] = file instanceof Action ? file : new Action(file);
             });
@@ -206,37 +169,30 @@ class Broker {
 
         Object.entries(this.singletons).forEach(([name, singleton]) => {
             singleton.getRequiredSingletons().forEach(s => {
-                if (!this.singletons[s])
-                    throw new Error(`Singleton "${name}" requires unknown singleton "${s}"`);
+                if (!this.singletons[s]) throw new Error(`Singleton "${name}" requires unknown singleton "${s}"`);
             });
         });
 
         Object.entries(this.actions).forEach(([name, action]) => {
             action.getRequiredSingletons().forEach(s => {
-                if (!this.singletons[s])
-                    throw new Error(`Action "${name}" requires unknown singleton "${s}"`);
+                if (!this.singletons[s]) throw new Error(`Action "${name}" requires unknown singleton "${s}"`);
             });
 
             action.getRequiredActions().forEach(a => {
-                if (!this.actions[a])
-                    throw new Error(`Action "${name}" requires unknown action "${a}"`);
+                if (!this.actions[a]) throw new Error(`Action "${name}" requires unknown action "${a}"`);
             });
 
             action.getRequiredPlugins().forEach(p => {
-                if (!this.plugins[p])
-                    throw new Error(`Action "${name}" tries to configure unknown plugin "${p}"`);
+                if (!this.plugins[p]) throw new Error(`Action "${name}" tries to configure unknown plugin "${p}"`);
             });
         });
-
 
         Object.entries(this.plugins).forEach(([name, plugin]) => {
             plugin.getRequiredSingletons().forEach(s => {
-                if (!this.singletons[s])
-                    throw new Error(`Plugin "${name}" requires unknown singleton "${s}"`);
+                if (!this.singletons[s]) throw new Error(`Plugin "${name}" requires unknown singleton "${s}"`);
             });
         });
     }
-
 
     /**
      * Starts microservice
@@ -246,13 +202,11 @@ class Broker {
     async startService(name) {
         const service = this.getServiceByName(name);
 
-        if (this.isServiceRunning(name))
-            return;
+        if (this.isServiceRunning(name)) return;
 
         this.loadService(name);
 
-        const
-            singletons = await this.startSingletons(service.dependencies.singletons),
+        const singletons = await this.startSingletons(service.dependencies.singletons),
             plugins = await this.startPlugins(service.dependencies.plugins),
             actions = await this.startActions(service.dependencies.actions),
             localActions = await this.startActions(service.dependencies.localActions);
@@ -268,12 +222,10 @@ class Broker {
         service.state = SERVICE_RUNNING;
     }
 
-
     loadService(name) {
         const service = this.getServiceByName(name);
 
-        if (this.isServiceLoaded(name))
-            return;
+        if (this.isServiceLoaded(name)) return;
 
         service.dependencies.singletons = this.sortSingletons(service.getRequiredSingletons());
         service.dependencies.localActions = service.getRequiredLocalActions().map(a => localActionName(name, a));
@@ -290,14 +242,11 @@ class Broker {
         service.state = SERVICE_LOADED;
     }
 
-
     async stopService(name) {
-        if (!this.isServiceRunning(name))
-            return;
+        if (!this.isServiceRunning(name)) return;
 
         const service = this.getServiceByName(name);
-        if (service.stopHandler)
-            await service.stopHandler({state: service.stateData});
+        if (service.stopHandler) await service.stopHandler({state: service.stateData});
 
         const runningServices = this.getRunningServices().filter(n => n !== name);
 
@@ -305,13 +254,12 @@ class Broker {
             const srv = this.getServiceByName(s);
             srv.dependencies.singletons.forEach(singleton => res.add(singleton));
             return res;
-        }, new Set);
+        }, new Set());
         const singletonsToStop = service.dependencies.singletons.filter(s => !startedSingletons.has(s));
 
         for (const singleton of singletonsToStop) {
             const s = this.singletons[singleton];
-            if (s.isLoading())
-                throw new Error(`Singleton "${singleton}" cannot be stopped because it is starting`);
+            if (s.isLoading()) throw new Error(`Singleton "${singleton}" cannot be stopped because it is starting`);
 
             if (s.stop && s.isLoaded()) {
                 s.state = Singleton.STATE.unloading;
@@ -325,11 +273,12 @@ class Broker {
 
     async stopAll() {
         const runningServices = this.getRunningServices();
-        await Promise.all(runningServices.map(async name => {
-            const service = this.getServiceByName(name);
-            if (service.stopHandler)
-                await service.stopHandler({state: service.stateData});
-        }));
+        await Promise.all(
+            runningServices.map(async name => {
+                const service = this.getServiceByName(name);
+                if (service.stopHandler) await service.stopHandler({state: service.stateData});
+            }),
+        );
         const sortedSingletons = this.sortSingletons(Object.keys(this.singletons)).reverse();
 
         for (const singletonName of sortedSingletons) {
@@ -343,23 +292,19 @@ class Broker {
         }
     }
 
-
     /**
      * @param {string} name
      * @returns {Service}
      */
     getServiceByName(name) {
-        if (!isString(name))
-            throw new Error('Parameter "name" have to be a string');
+        if (!isString(name)) throw new Error('Parameter "name" have to be a string');
 
         const srv = this.services[name];
 
-        if (!srv)
-            throw new Error(`Service with name "${name}" not found`);
+        if (!srv) throw new Error(`Service with name "${name}" not found`);
 
         return srv;
     }
-
 
     /**
      * @param {string} name
@@ -369,11 +314,9 @@ class Broker {
         return this.getServiceByName(name).state === SERVICE_RUNNING;
     }
 
-
     isServiceLoaded(name) {
         return this.getServiceByName(name).state !== SERVICE_CREATED;
     }
-
 
     /**
      * @returns {Array<string>}
@@ -382,15 +325,13 @@ class Broker {
         return Object.keys(this.services).filter(name => this.isServiceRunning(name));
     }
 
-
     /**
      * @param {Array<string>} requiredSingletons
      * @throws
      * @returns {Array<string>}
      */
     sortSingletons(requiredSingletons) {
-        const
-            singletons = this.singletons,
+        const singletons = this.singletons,
             serviceNode = Symbol('service-singleton'),
             graph = requiredSingletons.map(i => [serviceNode, i]),
             allSingletons = new Set(requiredSingletons);
@@ -401,9 +342,7 @@ class Broker {
             singletons[name].getRequiredSingletons().forEach(n => graph.push([name, n]));
         });
 
-        return sort(graph)
-            .reverse()
-            .slice(0, -1);
+        return sort(graph).reverse().slice(0, -1);
 
         function getDependencies(name, dependedBy = []) {
             allSingletons.add(name);
@@ -416,7 +355,6 @@ class Broker {
             });
         }
     }
-
 
     async startSingletons(names) {
         const result = {};
@@ -433,9 +371,7 @@ class Broker {
                 singleton.promise = singleton.start({singletons, state: singleton.stateData});
                 singleton.instance = await singleton.promise;
                 singleton.state = Singleton.STATE.loaded;
-            }
-            else if (singleton.isLoading())
-                await singleton.promise;
+            } else if (singleton.isLoading()) await singleton.promise;
             else if (singleton.isUnloading()) {
                 throw new Error(`Cannot start singleton "${name}" because it is stopping now`);
             }
@@ -446,10 +382,8 @@ class Broker {
         return result;
     }
 
-
     sortActions(serviceName, requiredActions, singletons) {
-        const
-            actions = this.actions,
+        const actions = this.actions,
             allActions = new Set(requiredActions),
             serviceNode = Symbol('service-action'),
             graph = requiredActions.map(i => [serviceNode, i]);
@@ -463,15 +397,13 @@ class Broker {
             if (notIncluded.length)
                 throw new Error(
                     `Action "${name}" in service "${serviceName}" requires not included singleton(s): ` +
-                    `"${notIncluded.join('", "')}". Please add them to service definition`,
+                        `"${notIncluded.join('", "')}". Please add them to service definition`,
                 );
 
             action.getRequiredActions().forEach(a => graph.push([name, a]));
         });
 
-        return sort(graph)
-            .reverse()
-            .slice(0, -1);
+        return sort(graph).reverse().slice(0, -1);
 
         function getDependencies(name, dependedBy = []) {
             allActions.add(name);
@@ -480,14 +412,13 @@ class Broker {
                 if (dependedBy.includes(name))
                     throw new Error(
                         `Found actions circular dependency in service ${serviceName}: ` +
-                        `${[...dependedBy, name, n].join(' -> ')}`,
+                            `${[...dependedBy, name, n].join(' -> ')}`,
                     );
 
                 getDependencies(n, [...dependedBy, name]);
             });
         }
     }
-
 
     async startActions(names) {
         const result = {};
@@ -504,12 +435,10 @@ class Broker {
         return result;
     }
 
-
     async initAction(name) {
         const action = this.actions[name];
 
-        if (action.initializedFn)
-            return action.initializedFn;
+        if (action.initializedFn) return action.initializedFn;
 
         const actions = {};
         action.getRequiredActions().forEach(actionName => {
@@ -522,41 +451,42 @@ class Broker {
         });
 
         const plugins = {};
-        await Promise.all(action.getRequiredPlugins().map(async pluginName => {
-            const plugin = this.plugins[pluginName];
-            set(plugins, pluginName, await plugin.instance(action.getPluginParams(pluginName)));
-        }));
+        await Promise.all(
+            action.getRequiredPlugins().map(async pluginName => {
+                const plugin = this.plugins[pluginName];
+                set(plugins, pluginName, await plugin.instance(action.getPluginParams(pluginName)));
+            }),
+        );
 
         const fn = await action.fn({actions, singletons, plugins});
 
-        if (!isFunction(fn))
-            throw new Error(`Action "${name}" did not return function`);
+        if (!isFunction(fn)) throw new Error(`Action "${name}" did not return function`);
 
         return fn;
     }
 
-
     async startPlugins(names) {
         const plugins = {};
 
-        await Promise.all(names.map(async name => {
-            const plugin = this.plugins[name];
+        await Promise.all(
+            names.map(async name => {
+                const plugin = this.plugins[name];
 
-            if (!plugin.instance) {
-                const singletons = plugin.getRequiredSingletons().reduce((res, singletonName) => {
-                    res[singletonName] = this.singletons[singletonName].instance;
-                    return res;
-                }, {});
+                if (!plugin.instance) {
+                    const singletons = plugin.getRequiredSingletons().reduce((res, singletonName) => {
+                        res[singletonName] = this.singletons[singletonName].instance;
+                        return res;
+                    }, {});
 
-                plugin.instance = await plugin.start({singletons});
-            }
+                    plugin.instance = await plugin.start({singletons});
+                }
 
-            set(plugins, name, plugin.instance);
-        }));
+                set(plugins, name, plugin.instance);
+            }),
+        );
 
         return plugins;
     }
-
 
     pickPlugins({actions, singletons, plugins = []}) {
         const names = [...plugins];
@@ -564,8 +494,7 @@ class Broker {
         actions.forEach(actionName => {
             const action = this.actions[actionName];
             action.getRequiredPlugins().forEach(pluginName => {
-                if (!names.includes(pluginName))
-                    names.push(pluginName);
+                if (!names.includes(pluginName)) names.push(pluginName);
             });
         });
 
@@ -576,13 +505,12 @@ class Broker {
             if (notIncluded.length)
                 throw new Error(
                     `Plugin "${pluginName}" requires not included singleton(s): "${notIncluded.join('", "')}". ` +
-                    'Please add them to service definition or don\'t use this plugin',
+                        'Please add them to service definition or do not use this plugin',
                 );
         });
 
         return names;
     }
-
 
     getDependencies() {
         const result = {
@@ -677,34 +605,27 @@ class Broker {
     async start({singletons, actions, plugins}) {
         const pluginsList = Object.keys(plugins || {});
         if (singletons) {
-            if (!isStringArray(singletons))
-                throw new Error('Parameter "singletons" have to be an array of strings');
+            if (!isStringArray(singletons)) throw new Error('Parameter "singletons" have to be an array of strings');
 
             const unknownSingletons = singletons.filter(s => !this.singletons[s]);
-            if (unknownSingletons.length)
-                throw new Error(`Unknown singletons: ${unknownSingletons.join(', ')}`);
+            if (unknownSingletons.length) throw new Error(`Unknown singletons: ${unknownSingletons.join(', ')}`);
         }
 
         if (actions) {
-            if (!isStringArray(actions))
-                throw new Error('Parameter "actions" have to be an array of strings');
+            if (!isStringArray(actions)) throw new Error('Parameter "actions" have to be an array of strings');
 
             const unknownActions = actions.filter(a => !this.actions[a]);
-            if (unknownActions.length)
-                throw new Error(`Unknown actions: ${unknownActions.join(', ')}`);
+            if (unknownActions.length) throw new Error(`Unknown actions: ${unknownActions.join(', ')}`);
         }
 
         if (plugins) {
-            if (!isObject(plugins))
-                throw new Error('Parameter "plugins" have to be an object');
+            if (!isObject(plugins)) throw new Error('Parameter "plugins" have to be an object');
 
             const unknownPlugins = pluginsList.filter(a => !this.plugins[a]);
-            if (unknownPlugins.length)
-                throw new Error(`Unknown plugins: ${unknownPlugins.join(', ')}`);
+            if (unknownPlugins.length) throw new Error(`Unknown plugins: ${unknownPlugins.join(', ')}`);
         }
 
-        const
-            sortedSingletons = this.sortSingletons(singletons || []),
+        const sortedSingletons = this.sortSingletons(singletons || []),
             sortedActions = this.sortActions('SCRIPT', actions || [], sortedSingletons),
             pluginsNames = this.pickPlugins({
                 actions: sortedActions,
@@ -718,9 +639,11 @@ class Broker {
 
         const initializedPlugins = {};
 
-        await Promise.all(pluginsList.map(async pluginName => {
-            initializedPlugins[pluginName] = await pluginsInstances[pluginName](plugins[pluginName]);
-        }));
+        await Promise.all(
+            pluginsList.map(async pluginName => {
+                initializedPlugins[pluginName] = await pluginsInstances[pluginName](plugins[pluginName]);
+            }),
+        );
 
         return {
             singletons: pick(singletonsInstances, singletons),
@@ -728,7 +651,6 @@ class Broker {
             plugins: initializedPlugins,
         };
     }
-
 
     /**
      * Returns new action mocked by provided entities.
@@ -740,22 +662,17 @@ class Broker {
      * @returns {Promise<Function>}
      */
     async mockAction(name, {actions, singletons, plugins} = {}) {
-        if (!name)
-            throw new Error('Invalid action name');
+        if (!name) throw new Error('Invalid action name');
 
         const action = this.actions[name];
 
-        if (!action)
-            throw new Error(`Unknown action "${name}"`);
+        if (!action) throw new Error(`Unknown action "${name}"`);
 
-        if (actions && !isObject(actions))
-            throw new Error('Invalid "actions" parameter');
+        if (actions && !isObject(actions)) throw new Error('Invalid "actions" parameter');
 
-        if (singletons && !isObject(singletons))
-            throw new Error('Invalid "singletons" parameter');
+        if (singletons && !isObject(singletons)) throw new Error('Invalid "singletons" parameter');
 
-        if (plugins && !isObject(plugins))
-            throw new Error('Invalid "plugins" parameter');
+        if (plugins && !isObject(plugins)) throw new Error('Invalid "plugins" parameter');
 
         const loadedDeps = await this.start({
             actions: difference(action.getRequiredActions(), Object.keys(actions || {})),
@@ -774,12 +691,9 @@ class Broker {
 
         return action.fn(deps);
     }
-
 }
 
-
 module.exports = Broker;
-
 
 function localActionName(service, action) {
     return `${service}#${action}`;

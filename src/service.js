@@ -1,28 +1,14 @@
 'use strict';
 
-const
-    {
-        isFunction,
-        isObject,
-        intersection,
-    } = require('lodash'),
-    {
-        isStringArray,
-        loadFiles,
-        DEFAULT_ACTION_TEMPLATE,
-        DEFAULT_ACTION_TEMPLATE_REMOVE,
-    } = require('./utils'),
-    Action = require('./action');
-
+const {isFunction, isObject, intersection} = require('lodash');
+const {isStringArray, loadFiles, DEFAULT_ACTION_TEMPLATE, DEFAULT_ACTION_TEMPLATE_REMOVE} = require('./utils');
+const Action = require('./action');
 
 class Service {
-
     static validateConfig({start, stop, singletons, actions, localActions}) {
-        if (!isFunction(start))
-            throw new Error('Service parameter "start" have to be a function');
+        if (!isFunction(start)) throw new Error('Service parameter "start" have to be a function');
 
-        if (stop && !isFunction(stop))
-            throw new Error('Service parameter "stop" have to be a function');
+        if (stop && !isFunction(stop)) throw new Error('Service parameter "stop" have to be a function');
 
         if (singletons && !isStringArray(singletons))
             throw new Error('Service parameter "singletons" have to be an array of strings');
@@ -31,19 +17,19 @@ class Service {
             throw new Error('Service parameter "actions" have to be an array of strings');
 
         if (localActions) {
-            if (!isObject(localActions))
-                throw new Error('Service parameter "localActions" have to be an object');
+            if (!isObject(localActions)) throw new Error('Service parameter "localActions" have to be an object');
 
             if (actions) {
                 const namesIntersection = intersection(actions, Object.keys(localActions));
                 if (namesIntersection.length)
-                    throw new Error(`There are names intersection between actions and local actions: ${namesIntersection}`);
+                    throw new Error(
+                        `There are names intersection between actions and local actions: ${namesIntersection}`,
+                    );
             }
 
             Object.values(localActions).forEach(a => a instanceof Action || Action.validateConfig(a));
         }
     }
-
 
     /**
      * @param {function} start
@@ -104,14 +90,12 @@ class Service {
         return [...this.actions];
     }
 
-
     /**
      * @returns {Array<string>}
      */
     getRequiredLocalActions() {
         return Object.keys(this.localActions);
     }
-
 
     /**
      * @param {string} name
@@ -120,7 +104,6 @@ class Service {
     isActionRequired(name) {
         return this.actions.includes(name) || !!this.localActions[name];
     }
-
 
     getRequiredSingletons() {
         return [...this.singletons];

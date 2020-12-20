@@ -1,18 +1,13 @@
 'use strict';
 
-const
-    {isFunction} = require('lodash'),
-    {isStringArray} = require('./utils');
-
+const {isFunction} = require('lodash');
+const {isStringArray} = require('./utils');
 
 class Singleton {
-
     static validateConfig({singletons, start, stop}) {
-        if (!isFunction(start))
-            throw new Error('Singleton parameter "start" have to be a function');
+        if (!isFunction(start)) throw new Error('Singleton parameter "start" have to be a function');
 
-        if (stop && !isFunction(stop))
-            throw new Error('Singleton parameter "stop" have to be a function');
+        if (stop && !isFunction(stop)) throw new Error('Singleton parameter "stop" have to be a function');
 
         if (singletons && !isStringArray(singletons))
             throw new Error('Singleton parameter "singletons" have to be an array of strings');
@@ -23,7 +18,7 @@ class Singleton {
         loading: 'loading',
         loaded: 'loaded',
         unloading: 'unloading',
-    }
+    };
 
     /**
      * @param {function} start
@@ -40,7 +35,6 @@ class Singleton {
         this.stateData = {};
         this.state = Singleton.STATE.initial;
     }
-
 
     /**
      * @returns {Array<string>}

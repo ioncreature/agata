@@ -1,60 +1,59 @@
 'use strict';
 
-const
-    {Plugin, Broker} = require('../index');
-
+const {Plugin, Broker} = require('../index');
 
 describe('Plugins for actions', () => {
-
-    it('should throw if plugin requires unknown singleton', async() => {
-        expect(() => Broker({
-            plugins: {
-                p1: {
-                    singletons: ['s0'],
-                    start() {
-                        return () => {};
+    it('should throw if plugin requires unknown singleton', async () => {
+        expect(() =>
+            Broker({
+                plugins: {
+                    p1: {
+                        singletons: ['s0'],
+                        start() {
+                            return () => {};
+                        },
                     },
                 },
-            },
-            actions: {
-                a1: {
-                    plugins: {
-                        p1: {ok: 1},
+                actions: {
+                    a1: {
+                        plugins: {
+                            p1: {ok: 1},
+                        },
+                        fn() {},
                     },
-                    fn() {},
                 },
-            },
-            services: {
-                first: {
-                    actions: ['a1'],
-                    start() {},
+                services: {
+                    first: {
+                        actions: ['a1'],
+                        start() {},
+                    },
                 },
-            },
-        })).toThrow(/requires unknown singleton/);
+            }),
+        ).toThrow(/requires unknown singleton/);
     });
 
-
-    it('should throw if actions required unknown plugin', async() => {
-        expect(() => Broker({
-            actions: {
-                a1: {
-                    plugins: {
-                        p1: {ok: 1},
+    it('should throw if actions required unknown plugin', async () => {
+        expect(() =>
+            Broker({
+                actions: {
+                    a1: {
+                        plugins: {
+                            p1: {ok: 1},
+                        },
+                        fn() {},
                     },
-                    fn() {},
                 },
-            },
-            services: {
-                first: {
-                    actions: ['a1'],
-                    start() {},
+                services: {
+                    first: {
+                        actions: ['a1'],
+                        start() {},
+                    },
                 },
-            },
-        })).toThrow(/tries to configure unknown plugin/);
+            }),
+        ).toThrow(/tries to configure unknown plugin/);
     });
 
-
-    it('should throw if plugin requires not included singleton', async() => {
+    it('should throw if plugin requires not included singleton', async () => {
         const broker = Broker({
             singletons: {
                 s0: {
@@ -90,8 +89,7 @@ describe('Plugins for actions', () => {
         await expect(broker.startService('first')).rejects.toThrow(/requires not included singleton/);
     });
 
-
-    it('should init plugin for local action', async() => {
+    it('should init plugin for local action', async () => {
         const broker = Broker({
             plugins: {
                 p1: {
@@ -161,5 +159,4 @@ describe('Plugins for actions', () => {
         await broker.stopService('first');
         await broker.startService('first');
     });
-
 });

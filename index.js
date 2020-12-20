@@ -1,12 +1,10 @@
 'use strict';
 
-const
-    Broker = require('./src/broker'),
-    Service = require('./src/service'),
-    Singleton = require('./src/singleton'),
-    Plugin = require('./src/plugin'),
-    Action = require('./src/action');
-
+const Broker = require('./src/broker');
+const Service = require('./src/service');
+const Singleton = require('./src/singleton');
+const Plugin = require('./src/plugin');
+const Action = require('./src/action');
 
 /**
  * @param {Object} config

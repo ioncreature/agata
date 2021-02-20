@@ -1,5 +1,6 @@
 'use strict';
 
+const {EventEmitter} = require('events');
 const {difference, isFunction, isObject, isString, pick, set, merge} = require('lodash');
 const sort = require('toposort');
 const {
@@ -26,7 +27,7 @@ const Plugin = require('./plugin');
 /**
  * Dependencies broker
  */
-class Broker {
+class Broker extends EventEmitter {
     /**
      * @param {string} [singletonsPath]
      * @param {string} [actionsPath]
@@ -38,6 +39,8 @@ class Broker {
      * @param {Object} [services]
      */
     constructor({singletons, actions, plugins, services, singletonsPath, actionsPath, pluginsPath, servicesPath}) {
+        super();
+
         this.singletons = {};
         this.actions = {};
         this.plugins = {};
@@ -204,6 +207,7 @@ class Broker {
 
         if (this.isServiceRunning(name)) return;
 
+        this.emit('service-starting', name);
         this.loadService(name);
 
         const singletons = await this.startSingletons(service.dependencies.singletons),
@@ -218,6 +222,7 @@ class Broker {
             localActions,
             state: service.stateData,
         });
+        this.emit('service-started', name);
 
         service.state = SERVICE_RUNNING;
     }
@@ -245,8 +250,10 @@ class Broker {
     async stopService(name) {
         if (!this.isServiceRunning(name)) return;
 
+        this.emit('service-stopping', name);
         const service = this.getServiceByName(name);
         if (service.stopHandler) await service.stopHandler({state: service.stateData});
+        this.emit('service-stopped', name);
 
         const runningServices = this.getRunningServices().filter(n => n !== name);
 
@@ -260,15 +267,17 @@ class Broker {
         for (const singleton of singletonsToStop) {
             const s = this.singletons[singleton];
             if (s.isLoading()) throw new Error(`Singleton "${singleton}" cannot be stopped because it is starting`);
-
+            this.emit('singleton-stopping', singleton);
             if (s.stop && s.isLoaded()) {
                 s.state = Singleton.STATE.unloading;
                 await s.stop({state: s.stateData});
             }
             s.state = Singleton.STATE.initial;
+            this.emit('singleton-stopped', singleton);
         }
 
         service.state = SERVICE_STOPPED;
+
     }
 
     async stopAll() {
@@ -276,18 +285,22 @@ class Broker {
         await Promise.all(
             runningServices.map(async name => {
                 const service = this.getServiceByName(name);
+                this.emit('service-stopping', name);
                 if (service.stopHandler) await service.stopHandler({state: service.stateData});
+                this.emit('service-stopped', name);
             }),
         );
         const sortedSingletons = this.sortSingletons(Object.keys(this.singletons)).reverse();
 
         for (const singletonName of sortedSingletons) {
             const singleton = this.singletons[singletonName];
+            this.emit('singleton-stopping', singletonName);
             if (singleton.stop && (singleton.isLoaded() || singleton.isLoading())) {
                 await singleton.promise;
                 singleton.state = Singleton.STATE.unloading;
                 await singleton.stop({state: singleton.stateData});
             }
+            this.emit('singleton-stopped', singletonName);
             singleton.state = Singleton.STATE.initial;
         }
     }
@@ -364,6 +377,7 @@ class Broker {
 
             if (singleton.isInit()) {
                 singleton.state = Singleton.STATE.loading;
+                this.emit('singleton-starting', name);
                 const singletons = singleton.getRequiredSingletons().reduce((res, n) => {
                     set(res, n, this.singletons[n].instance);
                     return res;
@@ -371,7 +385,10 @@ class Broker {
                 singleton.promise = singleton.start({singletons, state: singleton.stateData});
                 singleton.instance = await singleton.promise;
                 singleton.state = Singleton.STATE.loaded;
-            } else if (singleton.isLoading()) await singleton.promise;
+                this.emit('singleton-started', name);
+            } else if (singleton.isLoading()) {
+                await singleton.promise;
+            }
             else if (singleton.isUnloading()) {
                 throw new Error(`Cannot start singleton "${name}" because it is stopping now`);
             }
@@ -438,8 +455,11 @@ class Broker {
     async initAction(name) {
         const action = this.actions[name];
 
-        if (action.initializedFn) return action.initializedFn;
+        if (action.initializedFn) {
+            return action.initializedFn;
+        }
 
+        this.emit('action-starting', name);
         const actions = {};
         action.getRequiredActions().forEach(actionName => {
             set(actions, actionName, this.actions[actionName].initializedFn);
@@ -460,7 +480,11 @@ class Broker {
 
         const fn = await action.fn({actions, singletons, plugins});
 
-        if (!isFunction(fn)) throw new Error(`Action "${name}" did not return function`);
+        if (!isFunction(fn)) {
+            throw new Error(`Action "${name}" did not return function`);
+        }
+
+        this.emit('action-started', name);
 
         return fn;
     }
@@ -478,7 +502,9 @@ class Broker {
                         return res;
                     }, {});
 
+                    this.emit('plugin-starting', name);
                     plugin.instance = await plugin.start({singletons});
+                    this.emit('plugin-started', name);
                 }
 
                 set(plugins, name, plugin.instance);

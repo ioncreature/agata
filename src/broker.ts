@@ -1,44 +1,58 @@
-'use strict';
-
-const {EventEmitter} = require('events');
-const {difference, isFunction, isObject, isString, pick, set, merge} = require('lodash');
-const sort = require('toposort');
-const {
-    loadFiles,
-    isStringArray,
-    DEFAULT_SERVICE_TEMPLATE,
-    DEFAULT_SERVICE_TEMPLATE_REMOVE,
+import {EventEmitter} from 'events';
+import {difference, isFunction, isObject, isString, merge, pick, set} from 'lodash';
+import * as sort from 'toposort';
+import {
     DEFAULT_ACTION_TEMPLATE,
     DEFAULT_ACTION_TEMPLATE_REMOVE,
-    DEFAULT_SINGLETON_TEMPLATE,
-    DEFAULT_SINGLETON_TEMPLATE_REMOVE,
     DEFAULT_PLUGIN_TEMPLATE,
     DEFAULT_PLUGIN_TEMPLATE_REMOVE,
-    SERVICE_CREATED,
-    SERVICE_LOADED,
-    SERVICE_RUNNING,
-    SERVICE_STOPPED,
-} = require('./utils');
-const Service = require('./service');
-const Singleton = require('./singleton');
-const Action = require('./action');
-const Plugin = require('./plugin');
+    DEFAULT_SERVICE_TEMPLATE,
+    DEFAULT_SERVICE_TEMPLATE_REMOVE,
+    DEFAULT_SINGLETON_TEMPLATE,
+    DEFAULT_SINGLETON_TEMPLATE_REMOVE,
+    isStringArray,
+    loadFiles,
+} from './utils';
+import {IService, Service, ServiceState} from './service';
+import {ISingleton, Singleton, SingletonState} from './singleton';
+import {Action, ActionsMap, IAction} from './action';
+import {IPlugin, Plugin} from './plugin';
+
+export interface IBroker {
+    singletons?: Record<string, Singleton | ISingleton>;
+    actions?: Record<string, Action | IAction>;
+    plugins?: Record<string, Plugin | IPlugin>;
+    services?: Record<string, Service | IService>;
+    singletonsPath: string;
+    actionsPath: string;
+    pluginsPath: string;
+    servicesPath: string;
+}
 
 /**
  * Dependencies broker
  */
-class Broker extends EventEmitter {
-    /**
-     * @param {string} [singletonsPath]
-     * @param {string} [actionsPath]
-     * @param {string} [pluginsPath]
-     * @param {string} [servicesPath]
-     * @param {Object} [singletons]
-     * @param {Object} [actions]
-     * @param {Object} [plugins]
-     * @param {Object} [services]
-     */
-    constructor({singletons, actions, plugins, services, singletonsPath, actionsPath, pluginsPath, servicesPath}) {
+export class Broker extends EventEmitter {
+    private readonly singletons: Record<string, Singleton>;
+    private readonly actions: Record<string, Action>;
+    private readonly plugins: Record<string, Plugin>;
+    private readonly services: Record<string, Service>;
+
+    private readonly servicesPath: string;
+    private readonly singletonsPath: string;
+    private readonly actionsPath: string;
+    private readonly pluginsPath: string;
+
+    constructor({
+        singletons,
+        actions,
+        plugins,
+        services,
+        singletonsPath,
+        actionsPath,
+        pluginsPath,
+        servicesPath,
+    }: IBroker) {
         super();
 
         this.singletons = {};
@@ -52,7 +66,9 @@ class Broker extends EventEmitter {
         this.pluginsPath = pluginsPath;
 
         if (singletons) {
-            if (!isObject(singletons)) throw new Error('Parameter "singletons" have to be an object');
+            if (!isObject(singletons)) {
+                throw new Error('Parameter "singletons" have to be an object');
+            }
 
             Object.values(singletons).forEach(s => s instanceof Singleton || Singleton.validateConfig(s));
             this.singletons = Object.entries(singletons).reduce((res, [name, s]) => {
@@ -62,7 +78,9 @@ class Broker extends EventEmitter {
         }
 
         if (actions) {
-            if (!isObject(actions)) throw new Error('Parameter "actions" have to be an object');
+            if (!isObject(actions)) {
+                throw new Error('Parameter "actions" have to be an object');
+            }
 
             Object.values(actions).forEach(a => a instanceof Action || Action.validateConfig(a));
             this.actions = Object.entries(actions).reduce((res, [name, a]) => {
@@ -72,9 +90,11 @@ class Broker extends EventEmitter {
         }
 
         if (plugins) {
-            if (!isObject(plugins)) throw new Error('Parameter "plugins" have to be an object');
+            if (!isObject(plugins)) {
+                throw new Error('Parameter "plugins" have to be an object');
+            }
 
-            Object.values(plugins).forEach(a => a instanceof Plugin || Plugin.validateConfig(a));
+            Object.values(plugins).forEach(p => p instanceof Plugin || Plugin.validateConfig(p));
             this.plugins = Object.entries(plugins).reduce((res, [name, p]) => {
                 res[name] = p instanceof Plugin ? p : new Plugin(p);
                 return res;
@@ -82,7 +102,9 @@ class Broker extends EventEmitter {
         }
 
         if (services) {
-            if (!isObject(services)) throw new Error('Parameter "services" have to be an object');
+            if (!isObject(services)) {
+                throw new Error('Parameter "services" have to be an object');
+            }
 
             Object.values(services).forEach(s => s instanceof Service || Service.validateConfig(s));
             this.services = Object.entries(services).reduce((res, [name, s]) => {
@@ -100,7 +122,9 @@ class Broker extends EventEmitter {
             });
 
             files.forEach(([name, file]) => {
-                if (this.services[name]) throw new Error(`Service with name "${name}" already exists`);
+                if (this.services[name]) {
+                    throw new Error(`Service with name "${name}" already exists`);
+                }
 
                 this.services[name] = file instanceof Service ? file : new Service(file);
             });
@@ -158,7 +182,7 @@ class Broker extends EventEmitter {
         }
 
         Object.entries(this.services).forEach(([name, srv]) => {
-            srv.state = SERVICE_CREATED;
+            srv.state = ServiceState.created;
             srv.getRequiredSingletons().forEach(singleton => {
                 if (!this.singletons[singleton])
                     throw new Error(`Service "${name}" requires unknown singleton "${singleton}"`);
@@ -197,15 +221,12 @@ class Broker extends EventEmitter {
         });
     }
 
-    /**
-     * Starts microservice
-     * @param {string} name
-     * @returns {Promise<void>}
-     */
-    async startService(name) {
+    async startService(name): Promise<void> {
         const service = this.getServiceByName(name);
 
-        if (this.isServiceRunning(name)) return;
+        if (this.isServiceRunning(name)) {
+            return;
+        }
 
         this.emit('service-starting', name);
         this.loadService(name);
@@ -224,13 +245,15 @@ class Broker extends EventEmitter {
         });
         this.emit('service-started', name);
 
-        service.state = SERVICE_RUNNING;
+        service.state = ServiceState.running;
     }
 
     loadService(name) {
         const service = this.getServiceByName(name);
 
-        if (this.isServiceLoaded(name)) return;
+        if (this.isServiceLoaded(name)) {
+            return;
+        }
 
         service.dependencies.singletons = this.sortSingletons(service.getRequiredSingletons());
         service.dependencies.localActions = service.getRequiredLocalActions().map(a => localActionName(name, a));
@@ -244,7 +267,7 @@ class Broker extends EventEmitter {
             singletons: service.dependencies.singletons,
         });
 
-        service.state = SERVICE_LOADED;
+        service.state = ServiceState.loaded;
     }
 
     async stopService(name) {
@@ -269,15 +292,14 @@ class Broker extends EventEmitter {
             if (s.isLoading()) throw new Error(`Singleton "${singleton}" cannot be stopped because it is starting`);
             this.emit('singleton-stopping', singleton);
             if (s.stop && s.isLoaded()) {
-                s.state = Singleton.STATE.unloading;
+                s.state = SingletonState.unloading;
                 await s.stop({state: s.stateData});
             }
-            s.state = Singleton.STATE.initial;
+            s.state = SingletonState.initial;
             this.emit('singleton-stopped', singleton);
         }
 
-        service.state = SERVICE_STOPPED;
-
+        service.state = ServiceState.stopped;
     }
 
     async stopAll() {
@@ -286,7 +308,9 @@ class Broker extends EventEmitter {
             runningServices.map(async name => {
                 const service = this.getServiceByName(name);
                 this.emit('service-stopping', name);
-                if (service.stopHandler) await service.stopHandler({state: service.stateData});
+                if (service.stopHandler) {
+                    await service.stopHandler({state: service.stateData});
+                }
                 this.emit('service-stopped', name);
             }),
         );
@@ -297,53 +321,41 @@ class Broker extends EventEmitter {
             this.emit('singleton-stopping', singletonName);
             if (singleton.stop && (singleton.isLoaded() || singleton.isLoading())) {
                 await singleton.promise;
-                singleton.state = Singleton.STATE.unloading;
+                singleton.state = SingletonState.unloading;
                 await singleton.stop({state: singleton.stateData});
             }
             this.emit('singleton-stopped', singletonName);
-            singleton.state = Singleton.STATE.initial;
+            singleton.state = SingletonState.initial;
         }
     }
 
-    /**
-     * @param {string} name
-     * @returns {Service}
-     */
-    getServiceByName(name) {
-        if (!isString(name)) throw new Error('Parameter "name" have to be a string');
+    getServiceByName(name: string): Service {
+        if (!isString(name)) {
+            throw new Error('Parameter "name" have to be a string');
+        }
 
         const srv = this.services[name];
 
-        if (!srv) throw new Error(`Service with name "${name}" not found`);
+        if (!srv) {
+            throw new Error(`Service with name "${name}" not found`);
+        }
 
         return srv;
     }
 
-    /**
-     * @param {string} name
-     * @returns {boolean}
-     */
-    isServiceRunning(name) {
-        return this.getServiceByName(name).state === SERVICE_RUNNING;
+    isServiceRunning(name: string) {
+        return this.getServiceByName(name).state === ServiceState.running;
     }
 
-    isServiceLoaded(name) {
-        return this.getServiceByName(name).state !== SERVICE_CREATED;
+    isServiceLoaded(name: string) {
+        return this.getServiceByName(name).state !== ServiceState.created;
     }
 
-    /**
-     * @returns {Array<string>}
-     */
-    getRunningServices() {
+    getRunningServices(): string[] {
         return Object.keys(this.services).filter(name => this.isServiceRunning(name));
     }
 
-    /**
-     * @param {Array<string>} requiredSingletons
-     * @throws
-     * @returns {Array<string>}
-     */
-    sortSingletons(requiredSingletons) {
+    sortSingletons(requiredSingletons: string[]): string[] {
         const singletons = this.singletons,
             serviceNode = Symbol('service-singleton'),
             graph = requiredSingletons.map(i => [serviceNode, i]),
@@ -376,7 +388,7 @@ class Broker extends EventEmitter {
             const singleton = this.singletons[name];
 
             if (singleton.isInit()) {
-                singleton.state = Singleton.STATE.loading;
+                singleton.state = SingletonState.loading;
                 this.emit('singleton-starting', name);
                 const singletons = singleton.getRequiredSingletons().reduce((res, n) => {
                     set(res, n, this.singletons[n].instance);
@@ -384,12 +396,11 @@ class Broker extends EventEmitter {
                 }, {});
                 singleton.promise = singleton.start({singletons, state: singleton.stateData});
                 singleton.instance = await singleton.promise;
-                singleton.state = Singleton.STATE.loaded;
+                singleton.state = SingletonState.loaded;
                 this.emit('singleton-started', name);
             } else if (singleton.isLoading()) {
                 await singleton.promise;
-            }
-            else if (singleton.isUnloading()) {
+            } else if (singleton.isUnloading()) {
                 throw new Error(`Cannot start singleton "${name}" because it is stopping now`);
             }
 
@@ -399,7 +410,7 @@ class Broker extends EventEmitter {
         return result;
     }
 
-    sortActions(serviceName, requiredActions, singletons) {
+    sortActions(serviceName: string, requiredActions: string[], singletons: string[]): string[] {
         const actions = this.actions,
             allActions = new Set(requiredActions),
             serviceNode = Symbol('service-action'),
@@ -437,7 +448,7 @@ class Broker extends EventEmitter {
         }
     }
 
-    async startActions(names) {
+    async startActions(names: string[]): Promise<ActionsMap> {
         const result = {};
 
         for (const name of names) {
@@ -497,6 +508,7 @@ class Broker extends EventEmitter {
                 const plugin = this.plugins[name];
 
                 if (!plugin.instance) {
+                    // todo: fix race condition here :(
                     const singletons = plugin.getRequiredSingletons().reduce((res, singletonName) => {
                         res[singletonName] = this.singletons[singletonName].instance;
                         return res;
@@ -504,6 +516,10 @@ class Broker extends EventEmitter {
 
                     this.emit('plugin-starting', name);
                     plugin.instance = await plugin.start({singletons});
+
+                    if (typeof plugin.instance !== 'function'){
+                        throw new Error('Plugins "start" method has to return a function');
+                    }
                     this.emit('plugin-started', name);
                 }
 
@@ -687,18 +703,39 @@ class Broker extends EventEmitter {
      * @param {Object<string, Function>} [plugins] map of full name to Plugin value
      * @returns {Promise<Function>}
      */
-    async mockAction(name, {actions, singletons, plugins} = {}) {
-        if (!name) throw new Error('Invalid action name');
+    async mockAction(
+        name: string,
+        {
+            actions,
+            singletons,
+            plugins,
+        }: {
+            actions?: Record<string, Action | IAction>;
+            singletons: Record<string, Singleton | ISingleton>;
+            plugins: Record<string, Plugin | IPlugin>;
+        },
+    ): Promise<Function> {
+        if (!name) {
+            throw new Error('Invalid action name');
+        }
 
         const action = this.actions[name];
 
-        if (!action) throw new Error(`Unknown action "${name}"`);
+        if (!action) {
+            throw new Error(`Unknown action "${name}"`);
+        }
 
-        if (actions && !isObject(actions)) throw new Error('Invalid "actions" parameter');
+        if (actions && !isObject(actions)) {
+            throw new Error('Invalid "actions" parameter');
+        }
 
-        if (singletons && !isObject(singletons)) throw new Error('Invalid "singletons" parameter');
+        if (singletons && !isObject(singletons)) {
+            throw new Error('Invalid "singletons" parameter');
+        }
 
-        if (plugins && !isObject(plugins)) throw new Error('Invalid "plugins" parameter');
+        if (plugins && !isObject(plugins)) {
+            throw new Error('Invalid "plugins" parameter');
+        }
 
         const loadedDeps = await this.start({
             actions: difference(action.getRequiredActions(), Object.keys(actions || {})),
@@ -719,8 +756,6 @@ class Broker extends EventEmitter {
     }
 }
 
-module.exports = Broker;
-
-function localActionName(service, action) {
+function localActionName(service: string, action: string): string {
     return `${service}#${action}`;
 }

@@ -1,5 +1,3 @@
-'use strict';
-
 const {Plugin, Broker} = require('../index');
 
 describe('Plugins for actions', () => {

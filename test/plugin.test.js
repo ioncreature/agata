@@ -1,5 +1,3 @@
-'use strict';
-
 const {Plugin} = require('../index');
 
 describe('Plugin constructor', () => {

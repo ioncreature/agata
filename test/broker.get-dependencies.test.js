@@ -1,5 +1,3 @@
-'use strict';
-
 const {Broker} = require('../index');
 
 describe('Broker#getDependencies()', () => {

@@ -1,23 +1,52 @@
-'use strict';
+import {intersection, isFunction, isObject} from 'lodash';
+import {DEFAULT_ACTION_TEMPLATE, DEFAULT_ACTION_TEMPLATE_REMOVE, isStringArray, loadFiles} from './utils';
+import {Action, IAction} from './action';
 
-const {isFunction, isObject, intersection} = require('lodash');
-const {isStringArray, loadFiles, DEFAULT_ACTION_TEMPLATE, DEFAULT_ACTION_TEMPLATE_REMOVE} = require('./utils');
-const Action = require('./action');
+export enum ServiceState {
+    created = 'created',
+    loaded = 'loaded',
+    running = 'running',
+    stopped = 'stopped',
+}
 
-class Service {
-    static validateConfig({start, stop, singletons, actions, localActions}) {
-        if (!isFunction(start)) throw new Error('Service parameter "start" have to be a function');
+export interface IServiceDependencies {
+    singletons?: any;
+    actions?: any;
+    localActions?: any;
+}
 
-        if (stop && !isFunction(stop)) throw new Error('Service parameter "stop" have to be a function');
+export interface IService {
+    start: Function;
+    stop?: Function;
+    singletons?: string[];
+    actions?: string[];
+    localActions?: Record<string, IAction | Action>;
+    localActionsPath?: string;
+    localActionsTemplate?: string;
+}
 
-        if (singletons && !isStringArray(singletons))
+export class Service {
+    static validateConfig({start, stop, singletons, actions, localActions}: Partial<IService>) {
+        if (!isFunction(start)) {
+            throw new Error('Service parameter "start" have to be a function');
+        }
+
+        if (stop && !isFunction(stop)) {
+            throw new Error('Service parameter "stop" have to be a function');
+        }
+
+        if (singletons && !isStringArray(singletons)) {
             throw new Error('Service parameter "singletons" have to be an array of strings');
+        }
 
-        if (actions && !isStringArray(actions))
+        if (actions && !isStringArray(actions)) {
             throw new Error('Service parameter "actions" have to be an array of strings');
+        }
 
         if (localActions) {
-            if (!isObject(localActions)) throw new Error('Service parameter "localActions" have to be an object');
+            if (!isObject(localActions)) {
+                throw new Error('Service parameter "localActions" have to be an object');
+            }
 
             if (actions) {
                 const namesIntersection = intersection(actions, Object.keys(localActions));
@@ -27,9 +56,18 @@ class Service {
                     );
             }
 
-            Object.values(localActions).forEach(a => a instanceof Action || Action.validateConfig(a));
+            Object.values(localActions).forEach(a => a instanceof Action || Action.validateConfig(a as IAction));
         }
     }
+
+    actions: string[];
+    localActions: object;
+    singletons: string[];
+    state: string;
+    startHandler: Function;
+    stopHandler: Function;
+    dependencies: {singletons: string[]; actions: string[]; plugins: string[]; localActions: string[]};
+    stateData: object;
 
     /**
      * @param {function} start
@@ -48,12 +86,14 @@ class Service {
         localActions,
         localActionsPath,
         localActionsTemplate = DEFAULT_ACTION_TEMPLATE,
-    }) {
-        Service.validateConfig({start, stop, singletons, actions, localActions, localActionsPath});
+    }: IService) {
+        Service.validateConfig({start, stop, singletons, actions, localActions});
 
         this.dependencies = {
             singletons: [],
             actions: [],
+            plugins: [],
+            localActions: [],
         };
         this.actions = actions || [];
         this.singletons = singletons || [];
@@ -83,31 +123,19 @@ class Service {
         }
     }
 
-    /**
-     * @returns {Array<string>}
-     */
-    getRequiredActions() {
+    getRequiredActions(): string[] {
         return [...this.actions];
     }
 
-    /**
-     * @returns {Array<string>}
-     */
-    getRequiredLocalActions() {
+    getRequiredLocalActions(): string[] {
         return Object.keys(this.localActions);
     }
 
-    /**
-     * @param {string} name
-     * @returns {boolean}
-     */
-    isActionRequired(name) {
+    isActionRequired(name: string): boolean {
         return this.actions.includes(name) || !!this.localActions[name];
     }
 
-    getRequiredSingletons() {
+    getRequiredSingletons(): string[] {
         return [...this.singletons];
     }
 }
-
-module.exports = Service;

@@ -1,5 +1,3 @@
-'use strict';
-
 const {Singleton} = require('../index');
 
 describe('Singleton constructor', () => {

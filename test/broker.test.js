@@ -1,5 +1,3 @@
-'use strict';
-
 const {Broker, Action, Plugin, Service, Singleton} = require('../index');
 
 describe('Broker Constructor', () => {

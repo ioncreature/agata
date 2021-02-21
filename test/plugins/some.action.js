@@ -1,5 +1,3 @@
-'use strict';
-
 exports.plugins = {
     seven: {},
     proxy: {this: 'is object'},

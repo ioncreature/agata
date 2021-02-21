@@ -1,5 +1,3 @@
-'use strict';
-
 exports.singletons = ['config'];
 
 exports.start = ({singletons: {config}}) => {

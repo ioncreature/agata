@@ -1,9 +1,9 @@
-const {Broker} = require('../index');
+import {Broker} from '../src';
 
 describe('Services start and stop', () => {
     test('Start simple service', async () => {
         let started = false;
-        const broker = Broker({
+        const broker = new Broker({
             services: {
                 first: {
                     start() {
@@ -20,7 +20,7 @@ describe('Services start and stop', () => {
 
     test('Start service once', async () => {
         let started = 0;
-        const broker = Broker({
+        const broker = new Broker({
             services: {
                 first: {
                     start() {
@@ -38,7 +38,7 @@ describe('Services start and stop', () => {
     });
 
     test('Service state is passed to start and stop', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             services: {
                 first: {
                     start({state}) {
@@ -57,7 +57,7 @@ describe('Services start and stop', () => {
     });
 
     test('Singleton state is passed to start and stop', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s1: {
                     start({state}) {
@@ -84,7 +84,7 @@ describe('Services start and stop', () => {
     it('should stop service with no singletons', async () => {
         let i = 0;
 
-        const broker = Broker({
+        const broker = new Broker({
             services: {
                 first: {
                     start() {
@@ -111,7 +111,7 @@ describe('Services start and stop', () => {
         let srv = 'init',
             sng = 'init';
 
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s1: {
                     start() {
@@ -151,7 +151,7 @@ describe('Services start and stop', () => {
     it('should stop service once even if .stopHandler() called more than once', async () => {
         let stops = 0;
 
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s1: {
                     start() {},
@@ -186,7 +186,7 @@ describe('Services start and stop', () => {
             s4: 'init',
         };
 
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s1: {
                     start() {

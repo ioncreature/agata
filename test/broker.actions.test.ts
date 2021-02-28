@@ -1,9 +1,9 @@
-const {Broker} = require('../index');
+import {Broker} from '../src';
 
 describe('Service actions', () => {
     it('should throw if action requires unknown singleton', async () => {
         expect(() =>
-            Broker({
+            new Broker({
                 actions: {
                     a1: {
                         singletons: ['s0'],
@@ -21,7 +21,7 @@ describe('Service actions', () => {
     });
 
     it('should throw if action requires not included singleton', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s0: {start() {}},
                 s1: {start() {}},
@@ -45,7 +45,7 @@ describe('Service actions', () => {
 
     it('throws on unknown actions', () => {
         expect(() =>
-            Broker({
+            new Broker({
                 services: {
                     first: {
                         actions: ['a1'],
@@ -57,7 +57,7 @@ describe('Service actions', () => {
     });
 
     it('should load service with one action', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             actions: {
                 add: {
                     fn() {
@@ -80,7 +80,7 @@ describe('Service actions', () => {
     });
 
     it('should throw if loaded action does not return function', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             actions: {
                 oops: {
                     fn() {
@@ -100,7 +100,7 @@ describe('Service actions', () => {
     });
 
     it('should throw if there is circular dependency in actions', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             actions: {
                 a1: {
                     actions: ['a2'],
@@ -133,7 +133,7 @@ describe('Service actions', () => {
     });
 
     it('should load actions and singletons', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s1: {
                     singletons: ['s2'],
@@ -197,7 +197,7 @@ describe('Service actions', () => {
     it('should initialize action once even if there is more than one service in one process', async () => {
         const init = {inc: 0, add: 0};
 
-        const broker = Broker({
+        const broker = new Broker({
             actions: {
                 inc: {
                     actions: ['add'],

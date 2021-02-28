@@ -1,49 +1,52 @@
-const {Broker} = require('../index');
+import {Broker} from '../src';
 
 describe('Service singletons', () => {
     test('Broker throws if service depends on unknown singleton', () => {
-        expect(() =>
-            Broker({
-                services: {
-                    first: {
-                        singletons: ['s1'],
-                        start() {},
+        expect(
+            () =>
+                new Broker({
+                    services: {
+                        first: {
+                            singletons: ['s1'],
+                            start() {},
+                        },
                     },
-                },
-            }),
+                }),
         ).toThrow();
 
-        expect(() =>
-            Broker({
-                singletons: {
-                    s1: {start() {}},
-                },
-                services: {
-                    first: {
-                        singletons: ['s2'],
-                        start() {},
+        expect(
+            () =>
+                new Broker({
+                    singletons: {
+                        s1: {start() {}},
                     },
-                },
-            }),
+                    services: {
+                        first: {
+                            singletons: ['s2'],
+                            start() {},
+                        },
+                    },
+                }),
         ).toThrow();
     });
 
     test('Broker throws if singleton depends on unknown singleton', () => {
-        expect(() =>
-            Broker({
-                singletons: {
-                    s1: {
-                        singletons: ['fakeOne'],
-                        start() {},
+        expect(
+            () =>
+                new Broker({
+                    singletons: {
+                        s1: {
+                            singletons: ['fakeOne'],
+                            start() {},
+                        },
                     },
-                },
-                services: {
-                    first: {
-                        singletons: ['s1'],
-                        start() {},
+                    services: {
+                        first: {
+                            singletons: ['s1'],
+                            start() {},
+                        },
                     },
-                },
-            }),
+                }),
         ).toThrow();
     });
 
@@ -51,7 +54,7 @@ describe('Service singletons', () => {
         let serviceStarted = false,
             singletonStarted = false;
 
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s1: {
                     start() {
@@ -77,7 +80,7 @@ describe('Service singletons', () => {
     test('Start singletons once if few services starts in one process', async () => {
         let runs = 0;
 
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s1: {
                     start() {
@@ -103,7 +106,7 @@ describe('Service singletons', () => {
     });
 
     test('Service throws if there is a cyclic dependency', () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s0: {
                     singletons: ['s1'],
@@ -126,7 +129,7 @@ describe('Service singletons', () => {
     });
 
     test('Start service with singletons depended on other singletons', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 's0.s0': {
                     start() {

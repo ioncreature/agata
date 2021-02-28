@@ -9,13 +9,13 @@ export enum SingletonState {
 }
 
 export interface ISingletonDependencies {
-    singletons?: any
+    singletons?: any;
 }
 
 export interface ISingleton {
-    singletons?: string[]
-    start: Function
-    stop?: Function
+    singletons?: string[];
+    start: Function;
+    stop?: Function;
 }
 
 export class Singleton {
@@ -32,7 +32,7 @@ export class Singleton {
             throw new Error('Singleton parameter "singletons" have to be an array of strings');
         }
     }
-    
+
     promise: Promise<Singleton>;
     instance: Singleton;
     singletons: string[];

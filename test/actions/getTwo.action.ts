@@ -1,6 +1,6 @@
-const {Action} = require('../../index');
+import {Action} from '../../src';
 
-module.exports = Action({
+export default new Action({
     actions: ['getOne'],
 
     fn({actions: {getOne}}) {

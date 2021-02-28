@@ -1,9 +1,9 @@
-exports.singletons = ['config'];
+export const singletons = ['config'];
 
-exports.start = ({singletons: {config}}) => {
+export function start({singletons: {config}}) {
     return {
         getThree() {
             return config.one * 3;
         },
     };
-};
+}

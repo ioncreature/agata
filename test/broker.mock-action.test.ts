@@ -1,29 +1,14 @@
-const {Broker} = require('../index');
+import {Broker} from '../src';
 
 describe('Broker#mockAction()', () => {
     it('should throw if action is unknown', async () => {
-        const broker = Broker({});
+        const broker = new Broker({});
 
         await expect(broker.mockAction('a', {})).rejects.toThrow('Unknown action');
     });
 
-    it.each([
-        [undefined, undefined],
-        [undefined, {}],
-        ['doIt', {actions: 1}],
-        ['doIt', {singletons: 1}],
-        ['doIt', {plugins: 1}],
-    ])('should throw on invalid params, path: %p %p', async (name, params) => {
-        const broker = Broker({
-            actions: {
-                doIt: {fn: () => () => {}},
-            },
-        });
-        await expect(broker.mockAction(name, params)).rejects.toThrow();
-    });
-
     it('should mock with nothing', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             actions: {
                 doIt: {fn: () => () => 1},
             },
@@ -35,7 +20,7 @@ describe('Broker#mockAction()', () => {
     });
 
     it('should mock one action', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             actions: {
                 doIt: {fn: () => () => 1},
                 doThat: {
@@ -55,7 +40,7 @@ describe('Broker#mockAction()', () => {
     });
 
     it('should mock singleton for action', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s1: {
                     start() {
@@ -79,7 +64,7 @@ describe('Broker#mockAction()', () => {
     });
 
     it('should mock plugin for action', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             plugins: {
                 p1: {
                     start() {
@@ -103,7 +88,7 @@ describe('Broker#mockAction()', () => {
     });
 
     it('should mock everything', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             plugins: {
                 p1: {
                     start() {

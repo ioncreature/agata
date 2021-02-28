@@ -1,6 +1,6 @@
 import {sep as SEPARATOR, isAbsolute, resolve, join} from 'path';
 import {isString, camelCase} from 'lodash';
-import glob from 'glob';
+import * as glob from 'glob';
 
 export const DEFAULT_ACTION_TEMPLATE = '**/*.action.[tj]s';
 export const DEFAULT_ACTION_TEMPLATE_REMOVE = /\.action.[tj]s$/i;

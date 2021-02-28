@@ -15,7 +15,7 @@ import {
 } from './utils';
 import {IService, Service, ServiceState} from './service';
 import {ISingleton, Singleton, SingletonState} from './singleton';
-import {Action, ActionsMap, IAction} from './action';
+import {Action, ActionsMap, IAction, PluginsMap, SingletonsMap} from './action';
 import {IPlugin, Plugin} from './plugin';
 
 export interface IBroker {
@@ -23,10 +23,10 @@ export interface IBroker {
     actions?: Record<string, Action | IAction>;
     plugins?: Record<string, Plugin | IPlugin>;
     services?: Record<string, Service | IService>;
-    singletonsPath: string;
-    actionsPath: string;
-    pluginsPath: string;
-    servicesPath: string;
+    singletonsPath?: string;
+    actionsPath?: string;
+    pluginsPath?: string;
+    servicesPath?: string;
 }
 
 /**
@@ -248,7 +248,7 @@ export class Broker extends EventEmitter {
         service.state = ServiceState.running;
     }
 
-    loadService(name) {
+    loadService(name: string): void {
         const service = this.getServiceByName(name);
 
         if (this.isServiceLoaded(name)) {
@@ -270,7 +270,7 @@ export class Broker extends EventEmitter {
         service.state = ServiceState.loaded;
     }
 
-    async stopService(name) {
+    async stopService(name: string): Promise<void> {
         if (!this.isServiceRunning(name)) return;
 
         this.emit('service-stopping', name);
@@ -302,7 +302,7 @@ export class Broker extends EventEmitter {
         service.state = ServiceState.stopped;
     }
 
-    async stopAll() {
+    async stopAll(): Promise<void> {
         const runningServices = this.getRunningServices();
         await Promise.all(
             runningServices.map(async name => {
@@ -343,11 +343,11 @@ export class Broker extends EventEmitter {
         return srv;
     }
 
-    isServiceRunning(name: string) {
+    isServiceRunning(name: string): boolean {
         return this.getServiceByName(name).state === ServiceState.running;
     }
 
-    isServiceLoaded(name: string) {
+    isServiceLoaded(name: string): boolean {
         return this.getServiceByName(name).state !== ServiceState.created;
     }
 
@@ -381,7 +381,7 @@ export class Broker extends EventEmitter {
         }
     }
 
-    async startSingletons(names) {
+    async startSingletons(names: string[]): Promise<SingletonsMap> {
         const result = {};
 
         for (const name of names) {
@@ -463,7 +463,7 @@ export class Broker extends EventEmitter {
         return result;
     }
 
-    async initAction(name) {
+    async initAction(name): Promise<Function> {
         const action = this.actions[name];
 
         if (action.initializedFn) {
@@ -500,7 +500,7 @@ export class Broker extends EventEmitter {
         return fn;
     }
 
-    async startPlugins(names) {
+    async startPlugins(names): Promise<PluginsMap> {
         const plugins = {};
 
         await Promise.all(
@@ -517,7 +517,7 @@ export class Broker extends EventEmitter {
                     this.emit('plugin-starting', name);
                     plugin.instance = await plugin.start({singletons});
 
-                    if (typeof plugin.instance !== 'function'){
+                    if (typeof plugin.instance !== 'function') {
                         throw new Error('Plugins "start" method has to return a function');
                     }
                     this.emit('plugin-started', name);
@@ -530,7 +530,7 @@ export class Broker extends EventEmitter {
         return plugins;
     }
 
-    pickPlugins({actions, singletons, plugins = []}) {
+    pickPlugins({actions, singletons, plugins = []}): string[] {
         const names = [...plugins];
 
         actions.forEach(actionName => {
@@ -554,7 +554,56 @@ export class Broker extends EventEmitter {
         return names;
     }
 
-    getDependencies() {
+    getDependencies(): {
+        services: Record<
+            string,
+            {
+                singletons: string[];
+                actions: string[];
+                localActions: string[];
+                plugins: string[];
+            }
+        >;
+        singletons: Record<
+            string,
+            {
+                dependencies: {
+                    singletons: string[];
+                };
+                dependents: {
+                    actions: string[];
+                    singletons: string[];
+                    plugins: string[];
+                    services: string[];
+                };
+            }
+        >;
+        actions: Record<
+            string,
+            {
+                dependencies: {
+                    singletons: string[];
+                    actions: string[];
+                    plugins: string[];
+                };
+                dependents: {
+                    actions: string[];
+                    services: string[];
+                };
+            }
+        >;
+        plugins: Record<
+            string,
+            {
+                dependencies: {
+                    singletons: string[];
+                };
+                dependents: {
+                    actions: string[];
+                };
+            }
+        >;
+    } {
         const result = {
             services: {},
             singletons: {},
@@ -638,33 +687,49 @@ export class Broker extends EventEmitter {
     }
 
     /**
-     * Returns loaded and started dependencies
-     * @param {Array<string>} [singletons]
-     * @param {Array<string>} [actions]
-     * @param {Object} [plugins]
-     * @returns {Promise<{singletons, actions, plugins}>}
+     * Starts and returns selected actions, singletons and plugins
      */
-    async start({singletons, actions, plugins}) {
+    async start({
+        singletons,
+        actions,
+        plugins,
+    }: {
+        singletons?: string[];
+        actions?: string[];
+        plugins?: object;
+    }): Promise<{singletons: SingletonsMap; actions: any; plugins: PluginsMap}> {
         const pluginsList = Object.keys(plugins || {});
         if (singletons) {
-            if (!isStringArray(singletons)) throw new Error('Parameter "singletons" have to be an array of strings');
+            if (!isStringArray(singletons)) {
+                throw new Error('Parameter "singletons" have to be an array of strings');
+            }
 
             const unknownSingletons = singletons.filter(s => !this.singletons[s]);
-            if (unknownSingletons.length) throw new Error(`Unknown singletons: ${unknownSingletons.join(', ')}`);
+            if (unknownSingletons.length) {
+                throw new Error(`Unknown singletons: ${unknownSingletons.join(', ')}`);
+            }
         }
 
         if (actions) {
-            if (!isStringArray(actions)) throw new Error('Parameter "actions" have to be an array of strings');
+            if (!isStringArray(actions)) {
+                throw new Error('Parameter "actions" have to be an array of strings');
+            }
 
             const unknownActions = actions.filter(a => !this.actions[a]);
-            if (unknownActions.length) throw new Error(`Unknown actions: ${unknownActions.join(', ')}`);
+            if (unknownActions.length) {
+                throw new Error(`Unknown actions: ${unknownActions.join(', ')}`);
+            }
         }
 
         if (plugins) {
-            if (!isObject(plugins)) throw new Error('Parameter "plugins" have to be an object');
+            if (!isObject(plugins)) {
+                throw new Error('Parameter "plugins" have to be an object');
+            }
 
             const unknownPlugins = pluginsList.filter(a => !this.plugins[a]);
-            if (unknownPlugins.length) throw new Error(`Unknown plugins: ${unknownPlugins.join(', ')}`);
+            if (unknownPlugins.length) {
+                throw new Error(`Unknown plugins: ${unknownPlugins.join(', ')}`);
+            }
         }
 
         const sortedSingletons = this.sortSingletons(singletons || []),
@@ -697,11 +762,6 @@ export class Broker extends EventEmitter {
     /**
      * Returns new action mocked by provided entities.
      * If it requires not provided entities they will be loaded
-     * @param {string} name
-     * @param {Object<string, Function>} [actions] map of full name to Action function
-     * @param {Object<string, Any>} [singletons] map of full name to Singleton value
-     * @param {Object<string, Function>} [plugins] map of full name to Plugin value
-     * @returns {Promise<Function>}
      */
     async mockAction(
         name: string,
@@ -710,10 +770,10 @@ export class Broker extends EventEmitter {
             singletons,
             plugins,
         }: {
-            actions?: Record<string, Action | IAction>;
-            singletons: Record<string, Singleton | ISingleton>;
-            plugins: Record<string, Plugin | IPlugin>;
-        },
+            actions?: Record<string, Function>;
+            singletons?: Record<string, any>;
+            plugins?: Record<string, any>;
+        } = {},
     ): Promise<Function> {
         if (!name) {
             throw new Error('Invalid action name');

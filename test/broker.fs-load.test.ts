@@ -1,11 +1,11 @@
-const {join} = require('path'),
-    {Broker} = require('../index');
+import {join} from 'path';
+import {Broker} from '../src';
 
 describe('Load services from file system', () => {
     it.each([['test/services'], [join(__dirname, 'services')]])(
         'should load services from FS, path: %s',
         async servicesPath => {
-            const broker = Broker({servicesPath});
+            const broker = new Broker({servicesPath});
 
             await broker.startService('first');
             await broker.startService('second');
@@ -14,7 +14,7 @@ describe('Load services from file system', () => {
 
     it('should throw if services names are the same', () => {
         expect(() =>
-            Broker({
+            new Broker({
                 servicesPath: 'test/services',
                 services: {
                     first: {start() {}},
@@ -30,7 +30,7 @@ describe('Load actions from file system', () => {
         async actionsPath => {
             let result = 0;
 
-            const broker = Broker({
+            const broker = new Broker({
                 actionsPath,
                 services: {
                     first: {
@@ -49,7 +49,7 @@ describe('Load actions from file system', () => {
 
     it('should throw if actions names match', async () => {
         expect(() =>
-            Broker({
+            new Broker({
                 actionsPath: 'test/actions',
                 actions: {
                     getOne: {
@@ -67,7 +67,7 @@ describe('Load singletons from file system', () => {
         async singletonsPath => {
             let result = 0;
 
-            const broker = Broker({
+            const broker = new Broker({
                 singletonsPath,
                 services: {
                     first: {
@@ -86,7 +86,7 @@ describe('Load singletons from file system', () => {
 
     it('should throw if singletons names match', async () => {
         expect(() =>
-            Broker({
+            new Broker({
                 singletonsPath: 'test/singletons',
                 singletons: {
                     config: {
@@ -104,7 +104,7 @@ describe('Load plugins from file system', () => {
     it.each([['test/plugins'], [join(__dirname, 'plugins')]])(
         'should load actions with plugins from FS, path: %s',
         async path => {
-            const broker = Broker({
+            const broker = new Broker({
                 actionsPath: path,
                 pluginsPath: path,
                 services: {
@@ -127,7 +127,7 @@ describe('Load plugins from file system', () => {
 
     it('should throw if plugins names match', async () => {
         expect(() =>
-            Broker({
+            new Broker({
                 actionsPath: 'test/plugins',
                 pluginsPath: 'test/plugins',
                 plugins: {

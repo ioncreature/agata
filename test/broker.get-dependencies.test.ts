@@ -1,8 +1,8 @@
-const {Broker} = require('../index');
+import {Broker} from '../src';
 
 describe('Broker#getDependencies()', () => {
     it('should return only one service in dependency tree', () => {
-        const broker = Broker({
+        const broker = new Broker({
             services: {
                 first: {start() {}},
             },
@@ -24,7 +24,7 @@ describe('Broker#getDependencies()', () => {
     });
 
     it('should return only service with singleton, action and plugin', () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 singleton1: {start() {}},
             },
@@ -83,7 +83,7 @@ describe('Broker#getDependencies()', () => {
     });
 
     it('should return complex dependency tree', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 redis: {
                     start() {},

@@ -6,8 +6,8 @@ export interface IPluginDependencies {
 }
 
 export interface IPlugin {
-    singletons: string[];
-    start: Function;
+    singletons?: string[];
+    start: (IPluginDependencies) => any;
 }
 
 export class Plugin {

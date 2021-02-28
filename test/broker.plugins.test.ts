@@ -1,58 +1,60 @@
-const {Plugin, Broker} = require('../index');
+import {Plugin, Broker} from '../src';
 
 describe('Plugins for actions', () => {
     it('should throw if plugin requires unknown singleton', async () => {
-        expect(() =>
-            Broker({
-                plugins: {
-                    p1: {
-                        singletons: ['s0'],
-                        start() {
-                            return () => {};
+        expect(
+            () =>
+                new Broker({
+                    plugins: {
+                        p1: {
+                            singletons: ['s0'],
+                            start() {
+                                return () => {};
+                            },
                         },
                     },
-                },
-                actions: {
-                    a1: {
-                        plugins: {
-                            p1: {ok: 1},
+                    actions: {
+                        a1: {
+                            plugins: {
+                                p1: {ok: 1},
+                            },
+                            fn() {},
                         },
-                        fn() {},
                     },
-                },
-                services: {
-                    first: {
-                        actions: ['a1'],
-                        start() {},
+                    services: {
+                        first: {
+                            actions: ['a1'],
+                            start() {},
+                        },
                     },
-                },
-            }),
+                }),
         ).toThrow(/requires unknown singleton/);
     });
 
     it('should throw if actions required unknown plugin', async () => {
-        expect(() =>
-            Broker({
-                actions: {
-                    a1: {
-                        plugins: {
-                            p1: {ok: 1},
+        expect(
+            () =>
+                new Broker({
+                    actions: {
+                        a1: {
+                            plugins: {
+                                p1: {ok: 1},
+                            },
+                            fn() {},
                         },
-                        fn() {},
                     },
-                },
-                services: {
-                    first: {
-                        actions: ['a1'],
-                        start() {},
+                    services: {
+                        first: {
+                            actions: ['a1'],
+                            start() {},
+                        },
                     },
-                },
-            }),
+                }),
         ).toThrow(/tries to configure unknown plugin/);
     });
 
     it('should throw if plugin requires not included singleton', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 s0: {
                     start() {
@@ -88,7 +90,7 @@ describe('Plugins for actions', () => {
     });
 
     it('should init plugin for local action', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             plugins: {
                 p1: {
                     singletons: ['s1'],
@@ -96,7 +98,7 @@ describe('Plugins for actions', () => {
                         return params => ({params, s1});
                     },
                 },
-                p2: Plugin({
+                p2: new Plugin({
                     start() {
                         return params => ({params});
                     },

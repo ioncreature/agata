@@ -1,9 +1,9 @@
-const {Broker} = require('../index');
+import {Broker} from '../src';
 
 describe('Service local actions', () => {
     it('should throw if local actions requires unknown action', () => {
         expect(() =>
-            Broker({
+            new Broker({
                 services: {
                     first: {
                         localActions: {
@@ -22,7 +22,7 @@ describe('Service local actions', () => {
     });
 
     it('should start service with local actions', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             services: {
                 first: {
                     localActions: {
@@ -43,7 +43,7 @@ describe('Service local actions', () => {
     });
 
     it('should start service with local actions with dependencies', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             actions: {
                 a1: {
                     fn() {

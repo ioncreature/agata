@@ -1,44 +1,32 @@
-const {Broker} = require('../index');
+import {Broker} from '../src';
 
 describe('Broker#run()', () => {
-    it.each([
-        [{singletons: 1}],
-        [{singletons: 'a'}],
-        [{actions: 1}],
-        [{plugins: 1}],
-        [{singletons: [], actions: 1, plugins: {}}],
-        [{singletons: 1, actions: [], plugins: {}}],
-        [{singletons: [], actions: [], plugins: 1}],
-    ])('should throw on invalid params, path: %p', async params => {
-        const broker = Broker({});
-        await expect(broker.start(params)).rejects.toThrow('Parameter');
-    });
-
     it('should load without dependencies', async () => {
-        const broker = Broker({});
+        const broker = new Broker({});
+
         expect(await broker.start({})).toEqual({actions: {}, singletons: {}, plugins: {}});
     });
 
     it('should throw on unknown singletons', async () => {
-        const broker = Broker({});
+        const broker = new Broker({});
 
         await expect(broker.start({singletons: ['oops']})).rejects.toThrow('Unknown singleton');
     });
 
     it('should throw on unknown actions', async () => {
-        const broker = Broker({});
+        const broker = new Broker({});
 
         await expect(broker.start({actions: ['oops']})).rejects.toThrow('Unknown action');
     });
 
     it('should throw on unknown plugins', async () => {
-        const broker = Broker({});
+        const broker = new Broker({});
 
         await expect(broker.start({plugins: {oops: 1}})).rejects.toThrow('Unknown plugin');
     });
 
     it('should load singleton', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             singletons: {
                 one: {
                     start() {
@@ -56,7 +44,7 @@ describe('Broker#run()', () => {
     });
 
     it('should load plugin', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             plugins: {
                 one: {
                     start() {
@@ -74,20 +62,24 @@ describe('Broker#run()', () => {
     });
 
     it('should load action and run', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             actions: {
                 doIt: {
                     fn: () => () => ({ok: 3}),
                 },
+                'andPlease.doThat': {
+                    fn: () => () => ({ok: 5}),
+                },
             },
         });
 
-        const dependencies = await broker.start({actions: ['doIt']});
+        const dependencies = await broker.start({actions: ['doIt', 'andPlease.doThat']});
         expect(dependencies.actions.doIt()).toEqual({ok: 3});
+        expect(dependencies.actions.andPlease.doThat()).toEqual({ok: 3});
     });
 
     it('should load actions and singletons and run them twice', async () => {
-        const broker = Broker({
+        const broker = new Broker({
             plugins: {
                 some: {
                     singletons: ['one'],

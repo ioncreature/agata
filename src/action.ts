@@ -1,14 +1,22 @@
 import {cloneDeep, isFunction, isObject} from 'lodash';
 import {isStringArray} from './utils';
 
-export type ActionsRecord = Record<string, Action>;
+export type ActionsRecord = Record<string, Function>;
 
-export type ActionsMap = Record<string, Action | ActionsRecord>;
+export type ActionsMap = Record<string, Function | ActionsRecord>;
+
+export type SingletonsRecord = Record<string, any>;
+
+export type SingletonsMap = Record<string, any | SingletonsRecord>;
+
+export type PluginsRecord = Record<string, any>;
+
+export type PluginsMap = Record<string, any | PluginsRecord>;
 
 export interface IActionDependencies {
-    actions?: ActionsMap;
-    singletons?: any;
-    plugins?: any;
+    actions: ActionsMap;
+    singletons: SingletonsMap;
+    plugins: PluginsMap;
 }
 
 export interface IAction {

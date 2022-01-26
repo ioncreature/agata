@@ -1,9 +1,9 @@
-import {Action} from '../../src';
+import { Action } from '../../src';
 
 export default new Action({
-    actions: ['getOne'],
+  actions: ['getOne'],
 
-    fn({actions: {getOne}}) {
-        return () => getOne() + getOne();
-    },
+  fn({ actions: { getOne } }) {
+    return () => getOne() + getOne();
+  },
 });

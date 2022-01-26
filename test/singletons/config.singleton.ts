@@ -1,7 +1,7 @@
-import {Singleton} from '../../src';
+import { Singleton } from '../../src';
 
 export default new Singleton({
-    start() {
-        return {one: 1};
-    },
+  start() {
+    return { one: 1 };
+  },
 });

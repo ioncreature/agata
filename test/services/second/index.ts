@@ -1,5 +1,5 @@
-import {Service} from '../../../src';
+import { Service } from '../../../src';
 
 export default new Service({
-    start() {},
+  start() {},
 });

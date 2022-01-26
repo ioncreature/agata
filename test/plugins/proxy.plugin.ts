@@ -1,7 +1,7 @@
-import {Plugin} from '../../src';
+import { Plugin } from '../../src';
 
 export default new Plugin({
-    start() {
-        return params => params;
-    },
+  start() {
+    return params => params;
+  },
 });

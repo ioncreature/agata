@@ -1,3 +1,3 @@
 export function start() {
-    return () => 7;
+  return () => 7;
 }

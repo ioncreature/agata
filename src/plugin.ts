@@ -1,37 +1,37 @@
-import {isFunction} from 'lodash';
-import {isStringArray} from './utils';
+import { isFunction } from 'lodash';
+import { isStringArray } from './utils';
 
 export interface IPluginDependencies {
-    singletons?: any;
+  singletons?: any;
 }
 
 export interface IPlugin {
-    singletons?: string[];
-    start: (IPluginDependencies) => any;
+  singletons?: string[];
+  start: (IPluginDependencies) => any;
 }
 
 export class Plugin {
-    static validateConfig({singletons, start}: Partial<IPlugin>) {
-        if (!isFunction(start)) {
-            throw new Error('Plugin parameter "start" have to be a function');
-        }
-
-        if (singletons && !isStringArray(singletons)) {
-            throw new Error('Plugin parameter "singletons" have to be an array of strings');
-        }
+  static validateConfig({ singletons, start }: Partial<IPlugin>) {
+    if (!isFunction(start)) {
+      throw new Error('Plugin parameter "start" have to be a function');
     }
 
-    private readonly singletons: string[];
-    start: Function;
-    instance: Function;
-
-    constructor({singletons, start}: IPlugin) {
-        Plugin.validateConfig({singletons, start});
-        this.singletons = singletons || [];
-        this.start = start;
+    if (singletons && !isStringArray(singletons)) {
+      throw new Error('Plugin parameter "singletons" have to be an array of strings');
     }
+  }
 
-    getRequiredSingletons() {
-        return [...this.singletons];
-    }
+  private readonly singletons: string[];
+  start: Function;
+  instance: Function;
+
+  constructor({ singletons, start }: IPlugin) {
+    Plugin.validateConfig({ singletons, start });
+    this.singletons = singletons || [];
+    this.start = start;
+  }
+
+  getRequiredSingletons() {
+    return [...this.singletons];
+  }
 }
